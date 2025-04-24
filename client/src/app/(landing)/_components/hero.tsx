@@ -70,7 +70,7 @@ const CTAButtons = () => (
 	>
 		<div key={1} className="bg-foreground/10 border p-0.5">
 			<Button asChild size="lg" className="rounded-none px-4 text-sm">
-				<Link href="#link">
+				<Link href="/smart-contracts">
 					<span className="text-nowrap">Start Building</span>
 				</Link>
 			</Button>
@@ -82,7 +82,7 @@ const CTAButtons = () => (
 			variant="outline"
 			className="h-10 rounded-none px-4 text-sm"
 		>
-			<Link href="#link">
+			<Link href="/smart-contracts">
 				<span className="text-nowrap">Get Started</span>
 			</Link>
 		</Button>
