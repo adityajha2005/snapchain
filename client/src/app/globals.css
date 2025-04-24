@@ -42,7 +42,6 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-
   --animate-aurora: aurora 60s linear infinite;
 
   @keyframes aurora {
