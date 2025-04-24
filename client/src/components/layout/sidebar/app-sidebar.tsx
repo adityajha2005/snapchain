@@ -1,6 +1,6 @@
 'use client';
 
-import { Bot, Code, FileCode, Home, Plus, Settings, Sparkles } from 'lucide-react';
+import { Bot, Code, FileCode,  Plus, Settings, Sparkles } from 'lucide-react';
 
 import {
 	Sidebar,
@@ -16,11 +16,6 @@ import { usePathname } from 'next/navigation';
 
 // Menu items.
 export const items = [
-	{
-		title: 'Dashboard',
-		url: '/dashboard',
-		icon: Home,
-	},
 	{
 		title: 'Smart Contracts',
 		url: '/smart-contracts',
