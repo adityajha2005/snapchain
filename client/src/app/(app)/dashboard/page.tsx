@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { redirect } from 'next/navigation';
+import { redirect } from "next/navigation";
 
 export default function Dashboard() {
-	redirect('/smart-contracts');
+	redirect("/smart-contracts");
 }

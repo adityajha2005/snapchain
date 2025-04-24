@@ -1,28 +1,31 @@
-import mongoose from 'mongoose'
-const MONGODB_URI = process.env.MONGODB_URI as string
+import mongoose from "mongoose";
+const MONGODB_URI = process.env.MONGODB_URI as string;
 if (!MONGODB_URI) {
-  throw new Error('⚠️ Missing MONGODB_URI in environment variables')
+	throw new Error("⚠️ Missing MONGODB_URI in environment variables");
 }
-let cached = (global as any).mongoose
+let cached = (global as any).mongoose;
 if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null }
+	cached = (global as any).mongoose = { conn: null, promise: null };
 }
 async function dbConnect() {
-  if (cached.conn) {
-    return cached.conn
-  }
-  if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI, {
-      bufferCommands: false,
-    }).then((mongoose) => {
-      console.log('✅ Connected to MongoDB')
-      return mongoose
-    }).catch((err) => {
-      console.error('❌ MongoDB connection error:', err.message)
-      throw err
-    })
-  }
-  cached.conn = await cached.promise
-  return cached.conn
+	if (cached.conn) {
+		return cached.conn;
+	}
+	if (!cached.promise) {
+		cached.promise = mongoose
+			.connect(MONGODB_URI, {
+				bufferCommands: false,
+			})
+			.then((mongoose) => {
+				console.log("✅ Connected to MongoDB");
+				return mongoose;
+			})
+			.catch((err) => {
+				console.error("❌ MongoDB connection error:", err.message);
+				throw err;
+			});
+	}
+	cached.conn = await cached.promise;
+	return cached.conn;
 }
-export default dbConnect
+export default dbConnect;
