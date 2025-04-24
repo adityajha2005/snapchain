@@ -225,92 +225,99 @@ export const defineCustomBlocks = () => {
   };
 };
 
-// Initial toolbox for Blockly
+// Define the initial toolbox configuration
 export const initialToolbox = {
   kind: 'categoryToolbox',
   contents: [
     {
       kind: 'category',
-      name: 'Program Structure',
-      colour: '#9945FF',
+      name: 'Program',
+      colour: '230',
       contents: [
         {
           kind: 'block',
-          type: 'solana_program',
-        },
-        {
-          kind: 'block',
-          type: 'process_instruction',
-        },
-        {
-          kind: 'block',
-          type: 'function_param',
-        },
-      ],
+          type: 'solana_program'
+        }
+      ]
     },
     {
       kind: 'category',
-      name: 'Data Structures',
-      colour: '#14F195',
+      name: 'Data',
+      colour: '160',
       contents: [
         {
           kind: 'block',
-          type: 'rust_struct',
+          type: 'rust_struct'
         },
         {
           kind: 'block',
-          type: 'struct_field',
+          type: 'struct_field'
+        }
+      ]
+    },
+    {
+      kind: 'category',
+      name: 'Instructions',
+      colour: '290',
+      contents: [
+        {
+          kind: 'block',
+          type: 'process_instruction'
         },
-      ],
+        {
+          kind: 'block',
+          type: 'function_param'
+        }
+      ]
     },
     {
       kind: 'category',
       name: 'Accounts',
-      colour: '#E6007A',
+      colour: '0',
       contents: [
         {
           kind: 'block',
-          type: 'validate_accounts',
+          type: 'validate_accounts'
         },
         {
           kind: 'block',
-          type: 'get_account',
+          type: 'get_account'
         },
         {
           kind: 'block',
-          type: 'check_account_owner',
+          type: 'check_account_owner'
         },
         {
           kind: 'block',
-          type: 'deserialize_account',
-        },
-      ],
+          type: 'deserialize_account'
+        }
+      ]
     },
     {
       kind: 'category',
       name: 'PDAs',
-      colour: '#FF9900',
+      colour: '60',
       contents: [
         {
           kind: 'block',
-          type: 'create_pda',
+          type: 'create_pda'
         },
         {
           kind: 'block',
-          type: 'pda_seed',
-        },
-      ],
+          type: 'pda_seed'
+        }
+      ]
     },
     {
       kind: 'category',
-      name: 'Error Handling',
-      colour: '#FF3B30',
+      name: 'Errors',
+      colour: '330',
       contents: [
         {
           kind: 'block',
-          type: 'program_error',
-        },
-      ],
-    },
-  ],
+          type: 'program_error'
+        }
+      ]
+    }
+  ]
 };

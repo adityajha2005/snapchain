@@ -4,75 +4,71 @@ import * as Blockly from 'blockly';
 import { defineCustomBlocks } from './blocklyConfig';
 
 // Create a custom Rust generator
-let rustGenerator: any = null;
+export const rustGenerator = new Blockly.Generator('Rust');
 
-// Only run in browser environment
+// Define basic generator properties
+rustGenerator.INDENT = '    ';
+
+// Define custom order constants for expressions
+const ORDER_NONE = 99;
+const ORDER_ATOMIC = 0;
+
+// Only run block definitions in browser environment
 if (typeof window !== 'undefined') {
   // Initialize custom blocks
   defineCustomBlocks();
 
-  // Create the Rust generator
-  rustGenerator = new Blockly.Generator('Rust');
-
-  // Define basic generator properties
-  rustGenerator.INDENT = '    ';
-
-  // Define custom order constants for expressions
-  const ORDER_NONE = 99;
-  const ORDER_ATOMIC = 0;
-
   // Generator for Solana program block
-  rustGenerator['solana_program'] = function (block: Blockly.Block) {
+  rustGenerator.forBlock['solana_program'] = function(block: any) {
     const programName = block.getFieldValue('NAME');
     const programBody = rustGenerator.statementToCode(block, 'BODY');
     
     const code = `use solana_program::{
-      account_info::{next_account_info, AccountInfo},
-      entrypoint,
-      entrypoint::ProgramResult,
-      msg,
-      program_error::ProgramError,
-      pubkey::Pubkey,
-    };
+    account_info::{next_account_info, AccountInfo},
+    entrypoint,
+    entrypoint::ProgramResult,
+    msg,
+    program_error::ProgramError,
+    pubkey::Pubkey,
+};
 
-    // Define program entrypoint
-    entrypoint!(process_instruction);
+// Define program entrypoint
+entrypoint!(process_instruction);
 
-    ${programBody}
+${programBody}
 
-    // Program entrypoint implementation
-    fn process_instruction(
-        program_id: &Pubkey,
-        accounts: &[AccountInfo],
-        instruction_data: &[u8],
-    ) -> ProgramResult {
-        msg!("${programName}: begin processing");
-        
-        // Add your instruction processing logic here
-        
-        msg!("${programName}: processing complete");
-        Ok(())
-    }`;
+// Program entrypoint implementation
+pub fn process_instruction(
+    program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    instruction_data: &[u8],
+) -> ProgramResult {
+    msg!("${programName}: begin processing");
+    
+    // Add your instruction processing logic here
+    
+    msg!("${programName}: processing complete");
+    Ok(())
+}`;
     
     return code;
   };
 
   // Generator for Rust struct block
-  rustGenerator['rust_struct'] = function(block: Blockly.Block) {
+  rustGenerator.forBlock['rust_struct'] = function(block: any) {
     const structName = block.getFieldValue('NAME');
     const fields = rustGenerator.statementToCode(block, 'FIELDS');
     
-    const code = `
-    #[derive(BorshSerialize, BorshDeserialize)]
-    pub struct ${structName} {
-    ${fields}}
+    const code = `#[derive(BorshSerialize, BorshDeserialize)]
+pub struct ${structName} {
+${fields}}
 
-    `;
+`;
     return code;
   };
 
   // Generator for struct field block
-  rustGenerator['struct_field'] = function(block: Blockly.Block) {
+  rustGenerator.forBlock['struct_field'] = function(block: any) {
     const fieldName = block.getFieldValue('NAME');
     const fieldType = block.getFieldValue('TYPE');
     
@@ -80,40 +76,40 @@ if (typeof window !== 'undefined') {
   };
 
   // Generator for instruction processing block
-  rustGenerator['process_instruction'] = function(block: Blockly.Block) {
+  rustGenerator.forBlock['process_instruction'] = function(block: any) {
     const funcName = block.getFieldValue('NAME');
     const params = rustGenerator.statementToCode(block, 'PARAMS');
     const body = rustGenerator.statementToCode(block, 'BODY');
     
-    const code = `
-    pub fn ${funcName}(\n${params}) -> ProgramResult {
-    ${body}    Ok(())
-    }
+    const code = `pub fn ${funcName}(
+${params}) -> ProgramResult {
+${body}    Ok(())
+}
 
-    `;
+`;
     return code;
   };
 
   // Generator for function parameter block
-  rustGenerator['function_param'] = function(block: Blockly.Block) {
+  rustGenerator.forBlock['function_param'] = function(block: any) {
+    const paramName = block.getFieldValue('NAME');
     const paramType = block.getFieldValue('TYPE');
     
     return `${rustGenerator.INDENT}${paramType},\n`;
   };
 
   // Generator for account validation block
-  rustGenerator['validate_accounts'] = function(block: Blockly.Block) {
-    // Using a fixed value instead of ORDER_ATOMIC
-    const minAccounts = rustGenerator.valueToCode(block, 'MIN_ACCOUNTS', 0) || '2';
+  rustGenerator.forBlock['validate_accounts'] = function(block: any) {
+    const minAccounts = rustGenerator.valueToCode(block, 'MIN_ACCOUNTS', ORDER_ATOMIC) || '2';
     
     return `${rustGenerator.INDENT}let account_iter = &mut accounts.iter();
-    ${rustGenerator.INDENT}if accounts.len() < ${minAccounts} {
-    ${rustGenerator.INDENT}${rustGenerator.INDENT}return Err(ProgramError::NotEnoughAccountKeys);
-    ${rustGenerator.INDENT}}\n`;
+${rustGenerator.INDENT}if accounts.len() < ${minAccounts} {
+${rustGenerator.INDENT}${rustGenerator.INDENT}return Err(ProgramError::NotEnoughAccountKeys);
+${rustGenerator.INDENT}}\n`;
   };
 
   // Generator for get account block
-  rustGenerator['get_account'] = function(block: Blockly.Block) {
+  rustGenerator.forBlock['get_account'] = function(block: any) {
     const index = block.getFieldValue('INDEX');
     const accountName = block.getFieldValue('NAME');
     
@@ -121,17 +117,17 @@ if (typeof window !== 'undefined') {
   };
 
   // Generator for check account owner block
-  rustGenerator['check_account_owner'] = function(block: Blockly.Block) {
+  rustGenerator.forBlock['check_account_owner'] = function(block: any) {
     const account = block.getFieldValue('ACCOUNT');
     const owner = block.getFieldValue('OWNER');
     
     return `${rustGenerator.INDENT}if ${account}.owner != ${owner} {
-    ${rustGenerator.INDENT}${rustGenerator.INDENT}return Err(ProgramError::IncorrectProgramId);
-    ${rustGenerator.INDENT}}\n`;
+${rustGenerator.INDENT}${rustGenerator.INDENT}return Err(ProgramError::IncorrectProgramId);
+${rustGenerator.INDENT}}\n`;
   };
 
   // Generator for deserialize account block
-  rustGenerator['deserialize_account'] = function(block: Blockly.Block) {
+  rustGenerator.forBlock['deserialize_account'] = function(block: any) {
     const account = block.getFieldValue('ACCOUNT');
     const accountType = block.getFieldValue('TYPE');
     const lowerType = accountType.toLowerCase();
@@ -140,22 +136,23 @@ if (typeof window !== 'undefined') {
   };
 
   // Generator for PDA creation block
-  rustGenerator['create_pda'] = function(block: Blockly.Block) {
+  rustGenerator.forBlock['create_pda'] = function(block: any) {
     const pdaName = block.getFieldValue('NAME');
     const seeds = rustGenerator.statementToCode(block, 'SEEDS');
     
-    // Extract seed values
-    const seedList = seeds.trim().split('\n').filter(Boolean);
-    const seedsCode = seedList.map((seed: string) => `        ${seed}`).join(',\n');
+    const seedsCode = seeds.split('\n')
+      .filter(Boolean)
+      .map((seed: string) => `${rustGenerator.INDENT}${rustGenerator.INDENT}${seed}`)
+      .join(',\n');
     
     return `${rustGenerator.INDENT}let ${pdaName}_seeds = [
-    ${seedsCode}
-    ${rustGenerator.INDENT}];
-    ${rustGenerator.INDENT}let (${pdaName}, ${pdaName}_bump) = Pubkey::find_program_address(&${pdaName}_seeds, program_id);\n`;
+${seedsCode}
+${rustGenerator.INDENT}];
+${rustGenerator.INDENT}let (${pdaName}, ${pdaName}_bump) = Pubkey::find_program_address(&${pdaName}_seeds, program_id);\n`;
   };
 
   // Generator for PDA seed block
-  rustGenerator['pda_seed'] = function(block: Blockly.Block) {
+  rustGenerator.forBlock['pda_seed'] = function(block: any) {
     const value = block.getFieldValue('VALUE');
     
     if (value.startsWith('"') || value.startsWith('\'')) {
@@ -166,14 +163,9 @@ if (typeof window !== 'undefined') {
   };
 
   // Generator for program error block
-  rustGenerator['program_error'] = function(block: Blockly.Block) {
+  rustGenerator.forBlock['program_error'] = function(block: any) {
     const errorType = block.getFieldValue('ERROR');
     
     return `${rustGenerator.INDENT}return Err(${errorType});\n`;
   };
-
-  // For block chaining, we'll use the built-in functionality of Blockly
-  // Instead of using a custom scrub function
 }
-
-export { rustGenerator };
