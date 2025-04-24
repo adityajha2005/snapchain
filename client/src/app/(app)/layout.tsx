@@ -1,19 +1,17 @@
-import Navbar from '@/components/layout/navbar';
-import { AppSidebar } from '@/components/layout/sidebar/app-sidebar';
-import { SidebarProvider, } from '@/components/ui/sidebar';
-import { ReactNode } from 'react';
+import Navbar from "@/components/layout/navbar";
+import { AppSidebar } from "@/components/layout/sidebar/app-sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { ReactNode } from "react";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
 	return (
 		<>
-			{' '}
-			<SidebarProvider >
-				<AppSidebar /> 
-				<div className='flex relative flex-col w-full'>
+			{" "}
+			<SidebarProvider>
+				<AppSidebar />
+				<div className="flex relative flex-col w-full">
 					<Navbar />
-					<main className='w-full mt-10'>
-						{children}
-					</main>
+					<main className="w-full mt-10">{children}</main>
 				</div>
 			</SidebarProvider>
 		</>
