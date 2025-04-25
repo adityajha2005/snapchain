@@ -12,7 +12,6 @@ rustGenerator.INDENT = "    ";
 // Define custom order constants for expressions
 const ORDER_NONE = 99;
 const ORDER_ATOMIC = 0;
-
 // Only run block definitions in browser environment
 if (typeof window !== "undefined") {
 	// Initialize custom blocks
