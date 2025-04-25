@@ -1,10 +1,9 @@
-import { betterAuth } from "better-auth";
+import { betterAuth, BetterAuthOptions } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 
-const prisma = new PrismaClient();
 export const auth = betterAuth({
-	database: prismaAdapter(prisma, {
-		provider: "sqlite", // or "mysql", "postgresql", ...etc
-	}),
-});
+  database: prismaAdapter(prisma, {
+    provider: "mongodb",
+  }),
+} satisfies BetterAuthOptions);
