@@ -66,6 +66,26 @@ UserSchema.set("toJSON", {
 	},
 });
 
+
+const messageSchema = new mongoose.Schema({
+	user: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "User",
+		required: true,
+	},
+	content: {
+		type: String,
+		required: true,
+		trim: true,
+	},
+	timestamp: {
+		type: Date,
+		default: Date.now,
+	},
+});
+
+module.exports.Message = mongoose.model("Message", messageSchema);
+
 const User: Model<IUser> =
 	mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
 export default User;
