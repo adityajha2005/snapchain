@@ -25,25 +25,45 @@ const BlocklyWorkspace: React.FC<BlocklyWorkspaceProps> = ({
 		onCodeChange(code);
 	};
 
-	// Generate contract from workspace JSON
-	const handleGenerateContract = async () => {
+	// Refine contract using LLM
+	const handleRefineContract = async () => {
 		if (!workspaceRef.current) return;
 		
 		setIsGenerating(true);
 		try {
-			// Get workspace as JSON
-			const workspaceJson = Blockly.serialization.workspaces.save(workspaceRef.current);
-			const jsonString = JSON.stringify(workspaceJson);
+			// Get current Rust code
+			const currentCode = rustGenerator.workspaceToCode(workspaceRef.current);
 			
-			// Send to API with clear instruction
+			// Send to API with refinement instruction
 			const response = await fetch('/api/chat', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 				},
 				body: JSON.stringify({
-					message: `Generate a complete Solana smart contract based on this Blockly workspace JSON:\n\n${jsonString}\n\nPlease convert this into a working Rust contract.`,
-					userId: "contract-generator",
+					message: `You are a senior Rust developer. This project is your life's work — you cannot afford a single mistake. Every line of code must be precise, clean, and exactly as the user specifies. No hallucinations, no assumptions, no improvisation. Your only mission is to understand the user's instructions perfectly and implement them with complete accuracy. Your reputation and everything you stand for depends on delivering exactly what the user asks, nothing more, nothing less.
+
+Task: Please analyze this Solana smart contract with extreme attention to detail. Focus on:
+1. Compilation correctness - ensure the code compiles without any errors
+2. Security vulnerabilities - identify and fix any potential security issues
+3. Gas optimization - optimize for minimal gas usage without compromising security
+4. Best practices - ensure code follows Rust and Solana best practices
+5. Error handling - verify all error cases are properly handled
+
+Here's the current code:
+
+\`\`\`rust
+${currentCode}
+\`\`\`
+
+Please provide:
+1. A thorough analysis of any issues found
+2. The refined code with necessary improvements
+3. Confirmation that the code will compile successfully
+4. A detailed explanation of all changes made
+
+Return the improved code in a code block using \`\`\`rust\`\`\` format.`,
+					userId: "contract-refiner",
 				}),
 			});
 			
@@ -64,8 +84,8 @@ const BlocklyWorkspace: React.FC<BlocklyWorkspaceProps> = ({
 				onCodeChange(data.content);
 			}
 		} catch (error) {
-			console.error("Error generating contract:", error);
-			alert("Failed to generate contract. Please try again.");
+			console.error("Error refining contract:", error);
+			alert("Failed to refine contract. Please try again.");
 		} finally {
 			setIsGenerating(false);
 		}
@@ -108,12 +128,12 @@ const BlocklyWorkspace: React.FC<BlocklyWorkspaceProps> = ({
 					</h2>
 				</div>
 				<button
-					onClick={handleGenerateContract}
+					onClick={handleRefineContract}
 					disabled={isGenerating}
 					className="mr-4 flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-medium rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50"
 				>
 					<Zap className="h-3.5 w-3.5" />
-					{isGenerating ? "Generating..." : "Generate Contract"}
+					{isGenerating ? "Refining..." : "Refine Contract"}
 				</button>
 			</div>
 
