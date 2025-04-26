@@ -1,10 +1,11 @@
-import { betterAuth } from "better-auth";
-import { prismaAdapter } from "better-auth/adapters/prisma";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
-export const auth = betterAuth({
-	database: prismaAdapter(prisma, {
-		provider: "sqlite", // or "mysql", "postgresql", ...etc
-	}),
+import NextAuth from 'next-auth';
+import { MongoDBAdapter } from '@auth/mongodb-adapter';
+import client from './lib/authDB';
+import authConfig from './auth.config';
+export const { handlers, auth, signIn, signOut } = NextAuth({
+	adapter: MongoDBAdapter(client),
+	session: {
+		strategy: 'jwt',
+	},
+	...authConfig,
 });

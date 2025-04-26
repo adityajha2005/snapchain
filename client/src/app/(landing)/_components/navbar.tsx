@@ -2,6 +2,7 @@
 import Logo from "@/components/shared/Logo";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 const Navbar = () => {
@@ -15,10 +16,9 @@ const Navbar = () => {
 			<div className="hidden sm:flex items-center opacity-50 gap-2 flex-1 border-x border-border h-14 w-full bg-[repeating-linear-gradient(-45deg,var(--color-border),var(--color-border)_1px,transparent_1px,transparent_5px)] mx-2"></div>
 
 			{/* Desktop navigation */}
-			<div className="hidden sm:flex items-center gap-2 w-32 sm:w-44">
-				<Button className="rounded-none text-sm">Login</Button>
-				<Button variant="outline" className="rounded-none text-sm">
-					Sign Up
+			<div className="hidden sm:flex items-center gap-2 w-32 sm:w-44 justify-center">
+				<Button className="rounded-none text-sm  ring-2 ring-black/20 hover:ring-black/30">
+					<Link href="/auth">Launch App</Link>
 				</Button>
 			</div>
 
@@ -41,10 +41,7 @@ const Navbar = () => {
 			{/* Mobile menu */}
 			{mobileMenuOpen && (
 				<div className="sm:hidden absolute top-full left-0 right-0 bg-background border-b border-border p-4 flex flex-col gap-2 w-full">
-					<Button className="rounded-none w-full">Login</Button>
-					<Button variant="outline" className="rounded-none w-full">
-						Sign Up
-					</Button>
+					<Button className="rounded-none w-full">Launch App</Button>
 				</div>
 			)}
 		</div>
