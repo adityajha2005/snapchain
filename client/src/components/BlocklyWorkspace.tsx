@@ -461,93 +461,68 @@ Return the improved code in a code block using \`\`\`rust\`\`\` format.`,
 							</button>
 						</div>
 
-						{/* Status Display */}
-						{deploymentStatus.stage !== 'idle' && (
-							<div className={`mb-4 p-4 rounded-md ${
-								deploymentStatus.stage === 'error' ? 'bg-red-950/50 border border-red-900' :
-								deploymentStatus.stage === 'success' ? 'bg-emerald-950/50 border border-emerald-900' :
-								'bg-zinc-800/50 border border-zinc-700'
-							}`}>
-								<div className="flex items-center gap-3">
-									{getStatusIcon()}
-									<div className="flex-1">
-										<p className="text-sm font-medium text-zinc-100">
-											{deploymentStatus.message}
+						<div className="relative">
+							{/* Blurred original content */}
+							<div className="blur-sm opacity-30">
+								<div className="space-y-4">
+									<div>
+										<label className="block text-sm font-medium text-zinc-300 mb-2">
+											Select Keypair File
+										</label>
+										<input
+											ref={fileInputRef}
+											type="file"
+											accept=".json,.keypair"
+											onChange={handleKeypairSelect}
+											disabled={true}
+											className="block w-full text-sm text-zinc-400
+												file:mr-4 file:py-2 file:px-4
+												file:rounded-md file:border-0
+												file:text-sm file:font-medium
+												file:bg-primary file:text-white
+												hover:file:bg-primary/90
+												file:cursor-pointer cursor-pointer
+												focus:outline-none
+												disabled:opacity-50 disabled:cursor-not-allowed"
+										/>
+										<p className="mt-2 text-xs text-zinc-500">
+											Your keypair file is typically located at ~/.config/solana/id.json
 										</p>
-										{deploymentStatus.stage === 'success' && (
-											<div className="mt-2 text-xs text-zinc-400">
-												<p>Program ID: <span className="font-mono text-emerald-400">{deploymentStatus.programId}</span></p>
-												<p>Deployer: <span className="font-mono text-zinc-300">{deploymentStatus.address}</span></p>
-												<p>Balance: <span className="text-zinc-300">{deploymentStatus.balance} SOL</span></p>
-											</div>
-										)}
+									</div>
+
+									<div className="bg-zinc-800/50 rounded-md p-3 border border-zinc-700/50">
+										<h4 className="text-xs font-medium text-zinc-300 mb-2">Requirements:</h4>
+										<ul className="text-xs text-zinc-400 space-y-1">
+											<li>• Valid Solana keypair file</li>
+											<li>• Minimum 2 SOL for deployment</li>
+											<li>• Solana CLI installed and configured</li>
+										</ul>
 									</div>
 								</div>
 							</div>
-						)}
-						
-						<div className="space-y-4">
-							<div>
-								<label className="block text-sm font-medium text-zinc-300 mb-2">
-									Select Keypair File
-								</label>
-								<input
-									ref={fileInputRef}
-									type="file"
-									accept=".json,.keypair"
-									onChange={handleKeypairSelect}
-									disabled={isDeploying}
-									className="block w-full text-sm text-zinc-400
-										file:mr-4 file:py-2 file:px-4
-										file:rounded-md file:border-0
-										file:text-sm file:font-medium
-										file:bg-primary file:text-white
-										hover:file:bg-primary/90
-										file:cursor-pointer cursor-pointer
-										focus:outline-none
-										disabled:opacity-50 disabled:cursor-not-allowed"
-								/>
-								<p className="mt-2 text-xs text-zinc-500">
-									Your keypair file is typically located at ~/.config/solana/id.json
-								</p>
-							</div>
 
-							<div className="bg-zinc-800/50 rounded-md p-3 border border-zinc-700/50">
-								<h4 className="text-xs font-medium text-zinc-300 mb-2">Requirements:</h4>
-								<ul className="text-xs text-zinc-400 space-y-1">
-									<li>• Valid Solana keypair file</li>
-									<li>• Minimum 2 SOL for deployment</li>
-									<li>• Solana CLI installed and configured</li>
-								</ul>
+							<div className="absolute inset-0 flex items-center justify-center">
+								<div className="text-2xl font-bold text-white">Coming Soon</div>
 							</div>
+						</div>
 							
-							<div className="flex justify-end gap-3 pt-2">
-								<button
-									onClick={() => {
-										setShowKeypairDialog(false);
-										setSelectedKeypair(null);
-										if (fileInputRef.current) {
-											fileInputRef.current.value = '';
-										}
-										setDeploymentStatus({
-											stage: 'idle',
-											message: ''
-										});
-									}}
-									className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white transition-colors disabled:opacity-50"
-									disabled={isDeploying}
-								>
-									Cancel
-								</button>
-								<button
-									onClick={handleDeploy}
-									disabled={!selectedKeypair || isDeploying || deploymentStatus.stage === 'success'}
-									className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-white rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-								>
-									{isDeploying && <Loader2 className="h-4 w-4 animate-spin" />}
-									{deploymentStatus.stage === 'success' ? 'Deployed!' : isDeploying ? 'Deploying...' : 'Deploy Contract'}
-								</button>
-							</div>
+						<div className="flex justify-end gap-3 pt-2">
+							<button
+								onClick={() => {
+									setShowKeypairDialog(false);
+									setSelectedKeypair(null);
+									if (fileInputRef.current) {
+										fileInputRef.current.value = '';
+									}
+									setDeploymentStatus({
+										stage: 'idle',
+										message: ''
+									});
+								}}
+								className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white transition-colors"
+							>
+								Close
+							</button>
 						</div>
 					</div>
 				</div>
