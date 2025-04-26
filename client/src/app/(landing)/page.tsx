@@ -3,6 +3,7 @@ import Hero from "./_components/hero";
 import Navbar from "./_components/navbar";
 import CTA from "./_components/cta";
 import Footer from "./_components/footer";
+import Pricing from "@/components/pricing";
 
 const page = () => {
 	return (
@@ -13,6 +14,7 @@ const page = () => {
 				<main className="flex z-10 flex-col items-center justify-center  bg-background w-full max-w-7xl border-x border-border pt-20 opacity-100 ">
 					<Hero />
 					<Features />
+					<Pricing/>
 					<CTA />
 				</main>
 			</div>
