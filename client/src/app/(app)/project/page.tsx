@@ -5,12 +5,19 @@ import { initialToolbox } from "@/utils/blocklyConfig";
 import { rustGenerator } from "@/utils/rustGenerator";
 import BlocklyWorkspace from "@/components/BlocklyWorkspace";
 import CodePanel from "@/components/CodePanel";
+import SmartContractChat from "@/components/SmartContractChat";
 
 const ProjectPage = () => {
 	const [generatedCode, setGeneratedCode] = useState<string>("");
 	const handleCodeChange = (code: string) => {
 		setGeneratedCode(code);
 	};
+
+	// Function to handle code updates from the chat component
+	const handleCodeUpdateFromChat = (newCode: string) => {
+		setGeneratedCode(newCode);
+	};
+
 	return (
 		<div className="flex flex-col h-screen bg-zinc-950 text-zinc-50">
 			<div className="flex-grow flex flex-col lg:flex-row overflow-hidden">
@@ -22,6 +29,13 @@ const ProjectPage = () => {
 					{/* Code Panel */}
 					<div className="h-1/2 border-b border-zinc-800 p-4">
 						<CodePanel code={generatedCode} />
+					</div>
+					{/* Smart Contract Chat Assistant */}
+					<div className="h-1/2 overflow-hidden">
+						<SmartContractChat 
+							currentCode={generatedCode} 
+							onUpdateCode={handleCodeUpdateFromChat}
+						/>
 					</div>
 				</div>
 			</div>

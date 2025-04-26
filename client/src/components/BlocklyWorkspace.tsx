@@ -4,6 +4,7 @@ import { BlocklyWorkspace as ReactBlockly } from "react-blockly";
 import * as Blockly from "blockly";
 import { rustGenerator } from "@/utils/rustGenerator";
 import { initialToolbox } from "@/utils/blocklyConfig";
+import { Zap } from "lucide-react";
 
 interface BlocklyWorkspaceProps {
 	onCodeChange: (code: string) => void;
@@ -15,12 +16,59 @@ const BlocklyWorkspace: React.FC<BlocklyWorkspaceProps> = ({
 	const blocklyDiv = useRef<HTMLDivElement>(null);
 	const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
 	const [xml, setXml] = useState<string>("");
+	const [isGenerating, setIsGenerating] = useState(false);
 
 	// Generate Rust code when blocks change
 	const handleChange = (workspace: Blockly.WorkspaceSvg) => {
 		workspaceRef.current = workspace;
 		const code = rustGenerator.workspaceToCode(workspace);
 		onCodeChange(code);
+	};
+
+	// Generate contract from workspace JSON
+	const handleGenerateContract = async () => {
+		if (!workspaceRef.current) return;
+		
+		setIsGenerating(true);
+		try {
+			// Get workspace as JSON
+			const workspaceJson = Blockly.serialization.workspaces.save(workspaceRef.current);
+			const jsonString = JSON.stringify(workspaceJson);
+			
+			// Send to API with clear instruction
+			const response = await fetch('/api/chat', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					message: `Generate a complete Solana smart contract based on this Blockly workspace JSON:\n\n${jsonString}\n\nPlease convert this into a working Rust contract.`,
+					userId: "contract-generator",
+				}),
+			});
+			
+			if (!response.ok) {
+				throw new Error(`API responded with status: ${response.status}`);
+			}
+			
+			const data = await response.json();
+			
+			// Extract code from response and update
+			const codeBlockRegex = /```(?:rust)?([\s\S]*?)```/g;
+			const matches = [...data.content.matchAll(codeBlockRegex)];
+			
+			if (matches.length > 0) {
+				const extractedCode = matches[0][1].trim();
+				onCodeChange(extractedCode);
+			} else {
+				onCodeChange(data.content);
+			}
+		} catch (error) {
+			console.error("Error generating contract:", error);
+			alert("Failed to generate contract. Please try again.");
+		} finally {
+			setIsGenerating(false);
+		}
 	};
 
 	// Set up workspace event listeners
@@ -48,7 +96,7 @@ const BlocklyWorkspace: React.FC<BlocklyWorkspaceProps> = ({
 	return (
 		<div className="relative h-full w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-lg shadow-2xl overflow-hidden">
 			{/* Header with subtle gradient */}
-			<div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent backdrop-blur-sm z-10">
+			<div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent backdrop-blur-sm z-10 flex justify-between items-center">
 				<div className="flex items-center h-full px-4">
 					<div className="flex space-x-2">
 						<div className="w-3 h-3 rounded-full bg-red-500"></div>
@@ -59,6 +107,14 @@ const BlocklyWorkspace: React.FC<BlocklyWorkspaceProps> = ({
 						Solana Program Builder
 					</h2>
 				</div>
+				<button
+					onClick={handleGenerateContract}
+					disabled={isGenerating}
+					className="mr-4 flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-medium rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50"
+				>
+					<Zap className="h-3.5 w-3.5" />
+					{isGenerating ? "Generating..." : "Generate Contract"}
+				</button>
 			</div>
 
 			{/* Main Blockly workspace with enhanced styling */}

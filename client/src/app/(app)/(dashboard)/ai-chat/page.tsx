@@ -22,6 +22,7 @@ const AIChatPage = () => {
 	const [input, setInput] = useState("");
 	const [isTyping, setIsTyping] = useState(false);
 	const [showSuggestions, setShowSuggestions] = useState(true);
+	const [error, setError] = useState<string | null>(null);
 
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -43,7 +44,7 @@ const AIChatPage = () => {
 		}
 	}, [messages]);
 
-	const handleSendMessage = () => {
+	const handleSendMessage = async () => {
 		if (!input.trim()) return;
 
 		// Add user message
@@ -58,18 +59,41 @@ const AIChatPage = () => {
 		setInput("");
 		setShowSuggestions(false);
 		setIsTyping(true);
+		setError(null);
 
-		// Simulate AI response (in a real app, this would be an API call)
-		setTimeout(() => {
+		try {
+			// Make a real API call to our chat endpoint
+			const response = await fetch("/api/chat", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					message: input,
+					userId: "user-" + Math.random().toString(36).substring(2, 9), // Generate a simple user ID for testing
+				}),
+			});
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || "Failed to get AI response");
+			}
+
+			const data = await response.json();
+			
 			setIsTyping(false);
 			const aiMessage: Message = {
 				id: (Date.now() + 1).toString(),
-				content: `I understand you're asking about "${input}". This is a simulated response - in the actual implementation, this would come from a real AI model with Web3 knowledge.`,
+				content: data.content,
 				role: "assistant",
 				timestamp: new Date(),
 			};
 			setMessages((prev) => [...prev, aiMessage]);
-		}, 1500);
+		} catch (err) {
+			console.error("Error calling AI API:", err);
+			setIsTyping(false);
+			setError(err instanceof Error ? err.message : "Failed to get AI response");
+		}
 	};
 
 	// Format timestamp
@@ -139,6 +163,15 @@ const AIChatPage = () => {
 								</div>
 							</div>
 						))}
+
+						{/* Error message */}
+						{error && (
+							<div className="flex justify-center animate-in fade-in-50">
+								<div className="p-3 rounded-lg bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
+									Error: {error}
+								</div>
+							</div>
+						)}
 
 						{/* Typing indicator */}
 						{isTyping && (
@@ -232,8 +265,7 @@ const AIChatPage = () => {
 						</button>
 					</form>
 					<p className="text-xs text-muted-foreground mt-2 text-center">
-						AI responses are simulated. In production, this would connect to a
-						real AI service.
+						Powered by Together AI's Llama 3 model
 					</p>
 				</div>
 			</div>
