@@ -1,14 +1,14 @@
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import { Clipboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 interface CodePanelProps {
 	code: string;
 }
 
 const CodePanel: React.FC<CodePanelProps> = ({ code }) => {
-	const codeRef = useRef<HTMLPreElement>(null);
-
 	const copyToClipboard = () => {
 		if (code) {
 			navigator.clipboard.writeText(code);
@@ -31,13 +31,22 @@ const CodePanel: React.FC<CodePanelProps> = ({ code }) => {
 					<Clipboard size={16} />
 				</Button>
 			</div>
-			<div className="flex-grow overflow-auto p-4">
-				<pre
-					ref={codeRef}
-					className="text-sm font-mono text-zinc-200 whitespace-pre-wrap"
+			<div className="flex-grow overflow-auto">
+				<SyntaxHighlighter
+					language="rust"
+					style={atomDark}
+					customStyle={{
+						margin: 0,
+						borderRadius: 0,
+						minHeight: '100%',
+						background: '#18181b', // Match the background
+						fontSize: '0.875rem',
+					}}
+					showLineNumbers={true}
+					wrapLines={true}
 				>
 					{code || "// Drag blocks to generate Rust code"}
-				</pre>
+				</SyntaxHighlighter>
 			</div>
 		</div>
 	);

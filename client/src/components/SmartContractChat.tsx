@@ -2,6 +2,11 @@
 
 import { Send, User, Bot as BotIcon, Lightbulb, Zap, X, Code } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import ReactMarkdown from 'react-markdown';
+import rehypeHighlight from 'rehype-highlight';
+import rehypeRaw from 'rehype-raw';
+import remarkGfm from 'remark-gfm';
+import 'highlight.js/styles/atom-one-dark.css'; // Import a syntax highlighting theme
 
 interface Message {
 	id: string;
@@ -173,7 +178,12 @@ const SmartContractChat = ({ currentCode, onUpdateCode }: SmartContractChatProps
 									</span>
 								</div>
 								<div className="whitespace-pre-wrap">
-									{message.content}
+									<ReactMarkdown 
+										rehypePlugins={[rehypeHighlight, rehypeRaw]} 
+										remarkPlugins={[remarkGfm]}
+									>
+										{message.content}
+									</ReactMarkdown>
 								</div>
 							</div>
 						</div>
