@@ -220,7 +220,7 @@ const Hero = () => {
 								as='h1'
 								className='mt-8 text-balance text-6xl  lg:mt-16 '
 							>
-								Snapy Chain: Visual Smart Contract Builder
+								Snap Chain: Visual Smart Contract Builder
 							</TextEffect>
 							<TextEffect
 								per='line'
