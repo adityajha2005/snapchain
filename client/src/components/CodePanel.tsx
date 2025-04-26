@@ -12,7 +12,6 @@ const CodePanel: React.FC<CodePanelProps> = ({ code }) => {
 	const copyToClipboard = () => {
 		if (code) {
 			navigator.clipboard.writeText(code);
-			// Could add a toast notification here
 		}
 	};
 
