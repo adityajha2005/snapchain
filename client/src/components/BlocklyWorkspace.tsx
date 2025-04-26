@@ -30,6 +30,8 @@ const BlocklyWorkspace: React.FC<BlocklyWorkspaceProps> = ({
 	const [network, setNetwork] = useState<"devnet" | "testnet">("devnet");
 	const [showKeypairDialog, setShowKeypairDialog] = useState(false);
 	const [selectedKeypair, setSelectedKeypair] = useState<File | null>(null);
+	const [currentCode, setCurrentCode] = useState<string>("");
+	const [isRefinedCode, setIsRefinedCode] = useState(false);
 	const [deploymentStatus, setDeploymentStatus] = useState<DeploymentStatus>({
 		stage: 'idle',
 		message: ''
@@ -38,8 +40,13 @@ const BlocklyWorkspace: React.FC<BlocklyWorkspaceProps> = ({
 	// Generate Rust code when blocks change
 	const handleChange = (workspace: Blockly.WorkspaceSvg) => {
 		workspaceRef.current = workspace;
-		const code = rustGenerator.workspaceToCode(workspace);
-		onCodeChange(code);
+		
+		// Only update code if we're not using refined code
+		if (!isRefinedCode) {
+			const code = rustGenerator.workspaceToCode(workspace);
+			setCurrentCode(code);
+			onCodeChange(code);
+		}
 	};
 
 	// Refine contract using LLM
@@ -48,8 +55,8 @@ const BlocklyWorkspace: React.FC<BlocklyWorkspaceProps> = ({
 		
 		setIsGenerating(true);
 		try {
-			// Get current Rust code
-			const currentCode = rustGenerator.workspaceToCode(workspaceRef.current);
+			// Use the current code, whether it's from blocks or previously refined
+			const codeToRefine = currentCode || rustGenerator.workspaceToCode(workspaceRef.current);
 			
 			// Send to API with refinement instruction
 			const response = await fetch('/api/chat', {
@@ -70,7 +77,7 @@ Task: Please analyze this Solana smart contract with extreme attention to detail
 Here's the current code:
 
 \`\`\`rust
-${currentCode}
+${codeToRefine}
 \`\`\`
 
 Please provide:
@@ -95,10 +102,15 @@ Return the improved code in a code block using \`\`\`rust\`\`\` format.`,
 			const matches = [...data.content.matchAll(codeBlockRegex)];
 			
 			if (matches.length > 0) {
-				const extractedCode = matches[0][1].trim();
-				onCodeChange(extractedCode);
+				const refinedCode = matches[0][1].trim();
+				setCurrentCode(refinedCode);
+				setIsRefinedCode(true);
+				onCodeChange(refinedCode);
 			} else {
-				onCodeChange(data.content);
+				const fallbackCode = data.content;
+				setCurrentCode(fallbackCode);
+				setIsRefinedCode(true);
+				onCodeChange(fallbackCode);
 			}
 		} catch (error) {
 			console.error("Error refining contract:", error);
@@ -107,6 +119,25 @@ Return the improved code in a code block using \`\`\`rust\`\`\` format.`,
 			setIsGenerating(false);
 		}
 	};
+
+	// Reset workspace and code state
+	const handleResetWorkspace = () => {
+		if (workspaceRef.current) {
+			workspaceRef.current.clear();
+			setIsRefinedCode(false);
+			setCurrentCode("");
+			onCodeChange("");
+		}
+	};
+
+	// Effect to sync code state on mount
+	useEffect(() => {
+		if (workspaceRef.current && !isRefinedCode) {
+			const code = rustGenerator.workspaceToCode(workspaceRef.current);
+			setCurrentCode(code);
+			onCodeChange(code);
+		}
+	}, []);
 
 	// Handle keypair file selection
 	const handleKeypairSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -261,6 +292,12 @@ Return the improved code in a code block using \`\`\`rust\`\`\` format.`,
 							<option value="devnet">Devnet</option>
 							<option value="testnet">Testnet</option>
 						</select>
+						<button
+							onClick={handleResetWorkspace}
+							className="flex items-center gap-2 px-3 py-1.5 bg-zinc-600 text-white text-xs font-medium rounded-md hover:bg-zinc-700 transition-colors"
+						>
+							Reset
+						</button>
 						<button
 							onClick={initiateDeployment}
 							disabled={isDeploying}

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Clipboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -9,6 +9,27 @@ interface CodePanelProps {
 }
 
 const CodePanel: React.FC<CodePanelProps> = ({ code }) => {
+	const codeRef = useRef<string>(code);
+	const highlighterRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		// Only update if the code has actually changed
+		if (code !== codeRef.current) {
+			codeRef.current = code;
+			
+			// Ensure the scroll position is maintained
+			const scrollContainer = highlighterRef.current?.querySelector('pre');
+			const currentScroll = scrollContainer?.scrollTop || 0;
+			
+			// Update after a brief delay to ensure proper rendering
+			setTimeout(() => {
+				if (scrollContainer) {
+					scrollContainer.scrollTop = currentScroll;
+				}
+			}, 0);
+		}
+	}, [code]);
+
 	const copyToClipboard = () => {
 		if (code) {
 			navigator.clipboard.writeText(code);
@@ -30,7 +51,7 @@ const CodePanel: React.FC<CodePanelProps> = ({ code }) => {
 					<Clipboard size={16} />
 				</Button>
 			</div>
-			<div className="flex-grow overflow-auto">
+			<div className="flex-grow overflow-auto" ref={highlighterRef}>
 				<SyntaxHighlighter
 					language="rust"
 					style={atomDark}
@@ -38,11 +59,13 @@ const CodePanel: React.FC<CodePanelProps> = ({ code }) => {
 						margin: 0,
 						borderRadius: 0,
 						minHeight: '100%',
-						background: '#18181b', // Match the background
+						background: '#18181b',
 						fontSize: '0.875rem',
 					}}
 					showLineNumbers={true}
 					wrapLines={true}
+					wrapLongLines={false}
+					preserveWhitespace={true}
 				>
 					{code || "// Drag blocks to generate Rust code"}
 				</SyntaxHighlighter>
