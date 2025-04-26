@@ -172,4 +172,168 @@ ${rustGenerator.INDENT}let (${pdaName}, ${pdaName}_bump) = Pubkey::find_program_
 
 		return `${rustGenerator.INDENT}return Err(${errorType});\n`;
 	};
+
+	// Generator for Rust enum block
+	rustGenerator.forBlock["rust_enum"] = function (block: any) {
+		const enumName = block.getFieldValue("NAME");
+		const variants = rustGenerator.statementToCode(block, "VARIANTS");
+
+		const code = `#[derive(BorshSerialize, BorshDeserialize)]
+pub enum ${enumName} {
+${variants}}
+
+`;
+		return code;
+	};
+
+	// Generator for enum variant block
+	rustGenerator.forBlock["enum_variant"] = function (block: any) {
+		const variantName = block.getFieldValue("NAME");
+		const variantType = block.getFieldValue("TYPE");
+		const fields = rustGenerator.statementToCode(block, "FIELDS");
+
+		let code = "";
+		switch (variantType) {
+			case "SIMPLE":
+				code = `${rustGenerator.INDENT}${variantName},\n`;
+				break;
+			case "TUPLE":
+				code = `${rustGenerator.INDENT}${variantName}(${fields.trim()}),\n`;
+				break;
+			case "STRUCT":
+				code = `${rustGenerator.INDENT}${variantName} {\n${fields}${rustGenerator.INDENT}},\n`;
+				break;
+		}
+		return code;
+	};
+
+	// Generator for event emission block
+	rustGenerator.forBlock["emit_event"] = function (block: any) {
+		const eventName = block.getFieldValue("NAME");
+		const fields = rustGenerator.statementToCode(block, "FIELDS");
+
+		return `${rustGenerator.INDENT}msg!("${eventName}: {}", ${fields.trim()});\n`;
+	};
+
+	// Generator for CPI call block
+	rustGenerator.forBlock["cpi_call"] = function (block: any) {
+		const programId = block.getFieldValue("PROGRAM_ID");
+		const accounts = rustGenerator.statementToCode(block, "ACCOUNTS");
+		const data = rustGenerator.valueToCode(block, "DATA", ORDER_NONE) || "[]";
+
+		return `${rustGenerator.INDENT}invoke(
+${rustGenerator.INDENT}${rustGenerator.INDENT}&Instruction::new_with_bytes(
+${rustGenerator.INDENT}${rustGenerator.INDENT}${rustGenerator.INDENT}${programId},
+${rustGenerator.INDENT}${rustGenerator.INDENT}${rustGenerator.INDENT}${data},
+${rustGenerator.INDENT}${rustGenerator.INDENT}${rustGenerator.INDENT}&[${accounts.trim()}]
+${rustGenerator.INDENT}${rustGenerator.INDENT}),
+${rustGenerator.INDENT}${rustGenerator.INDENT}&[${accounts.trim()}]
+${rustGenerator.INDENT})?;\n`;
+	};
+
+	// Generator for account initialization block
+	rustGenerator.forBlock["init_account"] = function (block: any) {
+		const accountName = block.getFieldValue("NAME");
+		const accountType = block.getFieldValue("TYPE");
+		const space = rustGenerator.valueToCode(block, "SPACE", ORDER_ATOMIC) || "0";
+
+		return `${rustGenerator.INDENT}let rent = Rent::get()?;
+${rustGenerator.INDENT}let space = ${space};
+${rustGenerator.INDENT}let lamports = rent.minimum_balance(space as usize);
+${rustGenerator.INDENT}invoke(
+${rustGenerator.INDENT}${rustGenerator.INDENT}&system_instruction::create_account(
+${rustGenerator.INDENT}${rustGenerator.INDENT}${rustGenerator.INDENT}&${accountName}.key(),
+${rustGenerator.INDENT}${rustGenerator.INDENT}${rustGenerator.INDENT}&program_id,
+${rustGenerator.INDENT}${rustGenerator.INDENT}${rustGenerator.INDENT}lamports,
+${rustGenerator.INDENT}${rustGenerator.INDENT}${rustGenerator.INDENT}space,
+${rustGenerator.INDENT}${rustGenerator.INDENT}${rustGenerator.INDENT}&program_id,
+${rustGenerator.INDENT}${rustGenerator.INDENT}),
+${rustGenerator.INDENT}${rustGenerator.INDENT}&[${accountName}.clone(), system_program.clone()]
+${rustGenerator.INDENT})?;\n`;
+	};
+
+	// Generator for token operation block
+	rustGenerator.forBlock["token_operation"] = function (block: any) {
+		const operation = block.getFieldValue("OPERATION");
+		const amount = rustGenerator.valueToCode(block, "AMOUNT", ORDER_ATOMIC) || "0";
+		const accounts = rustGenerator.statementToCode(block, "ACCOUNTS");
+
+		let instruction = "";
+		switch (operation) {
+			case "MINT":
+				instruction = "mint_to";
+				break;
+			case "TRANSFER":
+				instruction = "transfer";
+				break;
+			case "BURN":
+				instruction = "burn";
+				break;
+			case "APPROVE":
+				instruction = "approve";
+				break;
+		}
+
+		return `${rustGenerator.INDENT}spl_token::instruction::${instruction}(
+${rustGenerator.INDENT}${rustGenerator.INDENT}&spl_token::id(),
+${rustGenerator.INDENT}${rustGenerator.INDENT}&[${accounts.trim()}],
+${rustGenerator.INDENT}${rustGenerator.INDENT}${amount}
+${rustGenerator.INDENT})?;\n`;
+	};
+
+	// Generator for account constraint block
+	rustGenerator.forBlock["account_constraint"] = function (block: any) {
+		const account = block.getFieldValue("ACCOUNT");
+		const constraint = block.getFieldValue("CONSTRAINT");
+
+		let code = "";
+		switch (constraint) {
+			case "IS_INITIALIZED":
+				code = `${rustGenerator.INDENT}if !${account}.is_initialized() {
+${rustGenerator.INDENT}${rustGenerator.INDENT}return Err(ProgramError::UninitializedAccount);
+${rustGenerator.INDENT}}\n`;
+				break;
+			case "IS_SIGNER":
+				code = `${rustGenerator.INDENT}if !${account}.is_signer {
+${rustGenerator.INDENT}${rustGenerator.INDENT}return Err(ProgramError::MissingRequiredSignature);
+${rustGenerator.INDENT}}\n`;
+				break;
+			case "IS_WRITABLE":
+				code = `${rustGenerator.INDENT}if !${account}.is_writable {
+${rustGenerator.INDENT}${rustGenerator.INDENT}return Err(ProgramError::InvalidAccountData);
+${rustGenerator.INDENT}}\n`;
+				break;
+			case "HAS_FUNDS":
+				code = `${rustGenerator.INDENT}if ${account}.lamports() < required_lamports {
+${rustGenerator.INDENT}${rustGenerator.INDENT}return Err(ProgramError::InsufficientFunds);
+${rustGenerator.INDENT}}\n`;
+				break;
+		}
+		return code;
+	};
+
+	// Generator for math operation block
+	rustGenerator.forBlock["math_operation"] = function (block: any) {
+		const operation = block.getFieldValue("OPERATION");
+		const a = rustGenerator.valueToCode(block, "A", ORDER_ATOMIC) || "0";
+		const b = rustGenerator.valueToCode(block, "B", ORDER_ATOMIC) || "0";
+
+		let operator = "";
+		switch (operation) {
+			case "ADD":
+				operator = "+";
+				break;
+			case "SUB":
+				operator = "-";
+				break;
+			case "MUL":
+				operator = "*";
+				break;
+			case "DIV":
+				operator = "/";
+				break;
+		}
+
+		return [`${a} ${operator} ${b}`, ORDER_ATOMIC];
+	};
 }

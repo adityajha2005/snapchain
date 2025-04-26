@@ -230,6 +230,169 @@ export const defineCustomBlocks = () => {
 			this.setHelpUrl("");
 		},
 	};
+
+	// Enum Definition block
+	Blockly.Blocks["rust_enum"] = {
+		init: function () {
+			this.appendDummyInput()
+				.appendField("Define Enum")
+				.appendField(new Blockly.FieldTextInput("MyEnum"), "NAME");
+			this.appendStatementInput("VARIANTS").setCheck(null);
+			this.setPreviousStatement(true, null);
+			this.setNextStatement(true, null);
+			this.setColour(160);
+			this.setTooltip("Define a Rust enum");
+			this.setHelpUrl("");
+		},
+	};
+
+	// Enum Variant block
+	Blockly.Blocks["enum_variant"] = {
+		init: function () {
+			this.appendDummyInput()
+				.appendField("Variant")
+				.appendField(new Blockly.FieldTextInput("Variant"), "NAME")
+				.appendField(
+					new Blockly.FieldDropdown([
+						["Simple", "SIMPLE"],
+						["Tuple", "TUPLE"],
+						["Struct", "STRUCT"],
+					]),
+					"TYPE",
+				);
+			this.appendStatementInput("FIELDS").setCheck(null);
+			this.setPreviousStatement(true, null);
+			this.setNextStatement(true, null);
+			this.setColour(160);
+			this.setTooltip("Add a variant to an enum");
+			this.setHelpUrl("");
+		},
+	};
+
+	// Event Definition block
+	Blockly.Blocks["emit_event"] = {
+		init: function () {
+			this.appendDummyInput()
+				.appendField("Emit Event")
+				.appendField(new Blockly.FieldTextInput("MyEvent"), "NAME");
+			this.appendStatementInput("FIELDS").setCheck(null);
+			this.setPreviousStatement(true, null);
+			this.setNextStatement(true, null);
+			this.setColour(120);
+			this.setTooltip("Emit a program event");
+			this.setHelpUrl("");
+		},
+	};
+
+	// Cross Program Invocation block
+	Blockly.Blocks["cpi_call"] = {
+		init: function () {
+			this.appendDummyInput()
+				.appendField("Call External Program")
+				.appendField(new Blockly.FieldTextInput("program_id"), "PROGRAM_ID");
+			this.appendStatementInput("ACCOUNTS").setCheck(null);
+			this.appendValueInput("DATA")
+				.setCheck("Array")
+				.appendField("with data");
+			this.setPreviousStatement(true, null);
+			this.setNextStatement(true, null);
+			this.setColour(90);
+			this.setTooltip("Make a cross-program invocation");
+			this.setHelpUrl("");
+		},
+	};
+
+	// Account Initialization block
+	Blockly.Blocks["init_account"] = {
+		init: function () {
+			this.appendDummyInput()
+				.appendField("Initialize Account")
+				.appendField(new Blockly.FieldTextInput("account"), "NAME")
+				.appendField("as")
+				.appendField(new Blockly.FieldTextInput("AccountType"), "TYPE");
+			this.appendValueInput("SPACE")
+				.setCheck("Number")
+				.appendField("with space");
+			this.setPreviousStatement(true, null);
+			this.setNextStatement(true, null);
+			this.setColour(30);
+			this.setTooltip("Initialize a new program account");
+			this.setHelpUrl("");
+		},
+	};
+
+	// Token Operation block
+	Blockly.Blocks["token_operation"] = {
+		init: function () {
+			this.appendDummyInput()
+				.appendField("Token Operation")
+				.appendField(
+					new Blockly.FieldDropdown([
+						["Mint", "MINT"],
+						["Transfer", "TRANSFER"],
+						["Burn", "BURN"],
+						["Approve", "APPROVE"],
+					]),
+					"OPERATION",
+				);
+			this.appendValueInput("AMOUNT")
+				.setCheck("Number")
+				.appendField("amount");
+			this.appendStatementInput("ACCOUNTS").setCheck(null);
+			this.setPreviousStatement(true, null);
+			this.setNextStatement(true, null);
+			this.setColour(180);
+			this.setTooltip("Perform a token operation");
+			this.setHelpUrl("");
+		},
+	};
+
+	// Account Constraint block
+	Blockly.Blocks["account_constraint"] = {
+		init: function () {
+			this.appendDummyInput()
+				.appendField("Check if")
+				.appendField(new Blockly.FieldTextInput("account"), "ACCOUNT")
+				.appendField(
+					new Blockly.FieldDropdown([
+						["is initialized", "IS_INITIALIZED"],
+						["is signer", "IS_SIGNER"],
+						["is writable", "IS_WRITABLE"],
+						["has sufficient funds", "HAS_FUNDS"],
+					]),
+					"CONSTRAINT",
+				);
+			this.setPreviousStatement(true, null);
+			this.setNextStatement(true, null);
+			this.setColour(0);
+			this.setTooltip("Add a constraint check for an account");
+			this.setHelpUrl("");
+		},
+	};
+
+	// Math Operation block
+	Blockly.Blocks["math_operation"] = {
+		init: function () {
+			this.appendValueInput("A")
+				.setCheck("Number");
+			this.appendDummyInput()
+				.appendField(
+					new Blockly.FieldDropdown([
+						["+", "ADD"],
+						["-", "SUB"],
+						["*", "MUL"],
+						["/", "DIV"],
+					]),
+					"OPERATION",
+				);
+			this.appendValueInput("B")
+				.setCheck("Number");
+			this.setOutput(true, "Number");
+			this.setColour(230);
+			this.setTooltip("Perform a math operation");
+			this.setHelpUrl("");
+		},
+	};
 };
 
 // Define the initial toolbox configuration
@@ -249,7 +412,7 @@ export const initialToolbox = {
 		},
 		{
 			kind: "category",
-			name: "Data",
+			name: "Data Structures",
 			colour: "160",
 			contents: [
 				{
@@ -259,6 +422,14 @@ export const initialToolbox = {
 				{
 					kind: "block",
 					type: "struct_field",
+				},
+				{
+					kind: "block",
+					type: "rust_enum",
+				},
+				{
+					kind: "block",
+					type: "enum_variant",
 				},
 			],
 		},
@@ -298,6 +469,14 @@ export const initialToolbox = {
 					kind: "block",
 					type: "deserialize_account",
 				},
+				{
+					kind: "block",
+					type: "init_account",
+				},
+				{
+					kind: "block",
+					type: "account_constraint",
+				},
 			],
 		},
 		{
@@ -312,6 +491,50 @@ export const initialToolbox = {
 				{
 					kind: "block",
 					type: "pda_seed",
+				},
+			],
+		},
+		{
+			kind: "category",
+			name: "Tokens",
+			colour: "180",
+			contents: [
+				{
+					kind: "block",
+					type: "token_operation",
+				},
+			],
+		},
+		{
+			kind: "category",
+			name: "Events",
+			colour: "120",
+			contents: [
+				{
+					kind: "block",
+					type: "emit_event",
+				},
+			],
+		},
+		{
+			kind: "category",
+			name: "External Calls",
+			colour: "90",
+			contents: [
+				{
+					kind: "block",
+					type: "cpi_call",
+				},
+			],
+		},
+		{
+			kind: "category",
+			name: "Math",
+			colour: "230",
+			contents: [
+				{
+					kind: "block",
+					type: "math_operation",
 				},
 			],
 		},
