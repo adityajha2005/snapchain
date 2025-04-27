@@ -8,6 +8,7 @@ import { Zap, Rocket, Key, X, AlertCircle, CheckCircle2, Loader2 } from "lucide-
 
 interface BlocklyWorkspaceProps {
 	onCodeChange: (code: string) => void;
+	onRefineContract: () => void;
 }
 
 interface DeploymentStatus {
@@ -20,6 +21,7 @@ interface DeploymentStatus {
 
 const BlocklyWorkspace: React.FC<BlocklyWorkspaceProps> = ({
 	onCodeChange,
+	onRefineContract,
 }) => {
 	const blocklyDiv = useRef<HTMLDivElement>(null);
 	const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
@@ -106,11 +108,13 @@ Return the improved code in a code block using \`\`\`rust\`\`\` format.`,
 				setCurrentCode(refinedCode);
 				setIsRefinedCode(true);
 				onCodeChange(refinedCode);
+				onRefineContract();
 			} else {
 				const fallbackCode = data.content;
 				setCurrentCode(fallbackCode);
 				setIsRefinedCode(true);
 				onCodeChange(fallbackCode);
+				onRefineContract();
 			}
 		} catch (error) {
 			console.error("Error refining contract:", error);

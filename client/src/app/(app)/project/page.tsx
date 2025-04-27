@@ -9,13 +9,22 @@ import SmartContractChat from "@/components/SmartContractChat";
 
 const ProjectPage = () => {
 	const [generatedCode, setGeneratedCode] = useState<string>("");
+	const [isCodeBlurred, setIsCodeBlurred] = useState(true);
+
 	const handleCodeChange = (code: string) => {
 		setGeneratedCode(code);
+		// Reset blur when code changes
+		setIsCodeBlurred(true);
 	};
 
 	// Function to handle code updates from the chat component
 	const handleCodeUpdateFromChat = (newCode: string) => {
 		setGeneratedCode(newCode);
+		setIsCodeBlurred(false);
+	};
+
+	const handleRefineContract = () => {
+		setIsCodeBlurred(false);
 	};
 
 	return (
@@ -23,12 +32,15 @@ const ProjectPage = () => {
 			<div className="flex-grow flex flex-col lg:flex-row overflow-hidden">
 				{/* Blockly Workspace */}
 				<div className="w-full lg:w-1/2 h-1/2 lg:h-full border-r border-zinc-800 overflow-hidden">
-					<BlocklyWorkspace onCodeChange={handleCodeChange} />
+					<BlocklyWorkspace 
+						onCodeChange={handleCodeChange} 
+						onRefineContract={handleRefineContract}
+					/>
 				</div>
 				<div className="w-full lg:w-1/2 h-1/2 lg:h-full flex flex-col">
 					{/* Code Panel */}
 					<div className="h-1/2 border-b border-zinc-800 p-4">
-						<CodePanel code={generatedCode} />
+						<CodePanel code={generatedCode} isBlurred={isCodeBlurred} />
 					</div>
 					{/* Smart Contract Chat Assistant */}
 					<div className="h-1/2 overflow-hidden">
