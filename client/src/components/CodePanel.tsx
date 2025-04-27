@@ -6,9 +6,10 @@ import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 interface CodePanelProps {
 	code: string;
+	isBlurred?: boolean;
 }
 
-const CodePanel: React.FC<CodePanelProps> = ({ code }) => {
+const CodePanel: React.FC<CodePanelProps> = ({ code, isBlurred = true }) => {
 	const codeRef = useRef<string>(code);
 	const highlighterRef = useRef<HTMLDivElement>(null);
 
@@ -37,7 +38,15 @@ const CodePanel: React.FC<CodePanelProps> = ({ code }) => {
 	};
 
 	return (
-		<div className="flex flex-col h-full bg-zinc-900 rounded-md">
+		<div className="flex flex-col h-full bg-zinc-900 rounded-md relative">
+			{/* Blur overlay */}
+			{isBlurred && (
+				<div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-md z-10 rounded-md flex items-center justify-center">
+					<span className="text-zinc-400 text-sm">Click "Refine Contract" to view the optimized code</span>
+				</div>
+			)}
+			
+			{/* Content */}
 			<div className="flex justify-between items-center p-2 bg-zinc-800 rounded-t-md">
 				<span className="text-sm font-medium text-zinc-200">
 					Generated Rust Code
@@ -47,6 +56,7 @@ const CodePanel: React.FC<CodePanelProps> = ({ code }) => {
 					variant="ghost"
 					className="h-8 w-8 p-0 text-zinc-400 hover:text-zinc-100"
 					onClick={copyToClipboard}
+					disabled={isBlurred}
 				>
 					<Clipboard size={16} />
 				</Button>
