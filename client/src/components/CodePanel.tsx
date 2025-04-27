@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { Clipboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface CodePanelProps {
 	code: string;
