@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
 import Logo from '@/components/shared/Logo';
+import Link from 'next/link';
 
 // Menu items.
 export const items = [
@@ -46,13 +47,15 @@ export function AppSidebar() {
 	return (
 		<Sidebar collapsible='icon'>
 			<SidebarContent>
-				<div className='flex items-center px-4 py-2.5 mb-2 border-b border-border justify-center'>
+				<div className='flex items-center px-4 py-2.5 mb-2 border-b border-border justify-center h-13'>
 					<Logo className='h-6 w-6 text-primary' />
 				</div>
 				<div className='px-2'>
 					<button className='w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md py-2 font-medium text-sm'>
-						<Plus className='h-4 w-4' />
-						{state === 'expanded' && <span>Create</span>}
+						<Link href='/project' className='w-full flex items-center justify-center gap-2'>
+							<Plus className='h-4 w-4' />
+							{state === 'expanded' && <span>Create</span>}
+						</Link>
 					</button>
 				</div>
 				<SidebarGroup>
