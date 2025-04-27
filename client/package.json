@@ -11,6 +11,7 @@
 		"lint:fix": "biome lint --write ."
 	},
 	"dependencies": {
+		"@auth/mongodb-adapter": "^3.9.0",
 		"@prisma/client": "^6.6.0",
 		"@radix-ui/react-dialog": "^1.1.11",
 		"@radix-ui/react-separator": "^1.1.4",
@@ -26,9 +27,11 @@
 		"drizzle-orm": "^0.42.0",
 		"framer-motion": "^12.8.0",
 		"lucide-react": "^0.503.0",
-		"mongoose": "^8.13.2",
+		"mongodb": "^6.16.0",
+		"mongoose": "^8.14.0",
 		"motion": "^12.9.1",
 		"next": "15.3.1",
+		"next-auth": "^4.24.11",
 		"openai": "^4.96.0",
 		"postgres": "^3.4.5",
 		"react": "^19.0.0",

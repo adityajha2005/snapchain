@@ -66,6 +66,12 @@ UserSchema.set("toJSON", {
 	},
 });
 
+// Message model definition
+export interface IMessage extends Document {
+	user: mongoose.Types.ObjectId;
+	content: string;
+	timestamp: Date;
+}
 
 const messageSchema = new mongoose.Schema({
 	user: {
@@ -84,7 +90,9 @@ const messageSchema = new mongoose.Schema({
 	},
 });
 
-module.exports.Message = mongoose.model("Message", messageSchema);
+// Use the same pattern as the User model to prevent redefinition errors
+export const Message: Model<IMessage> = 
+	mongoose.models.Message || mongoose.model<IMessage>("Message", messageSchema);
 
 const User: Model<IUser> =
 	mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
