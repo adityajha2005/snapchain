@@ -8,7 +8,6 @@ interface CodePanelProps {
 	code: string;
 	isBlurred?: boolean;
 }
-
 const CodePanel: React.FC<CodePanelProps> = ({ code, isBlurred = true }) => {
 	const codeRef = useRef<string>(code);
 	const highlighterRef = useRef<HTMLDivElement>(null);
