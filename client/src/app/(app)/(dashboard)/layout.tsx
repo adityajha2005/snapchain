@@ -9,6 +9,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 			{" "}
 			<SidebarProvider>
 				<AppSidebar />
+				
 				<div className="flex relative flex-col w-full">
 					<Navbar />
 					<main className="w-full mt-10">{children}</main>
