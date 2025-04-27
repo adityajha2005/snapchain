@@ -1,6 +1,6 @@
 'use client';
 
-import { Bot, FileCode, Plus, Settings, Sparkles } from 'lucide-react';
+import { Bot, FileCode, Plus, User, Sparkles } from 'lucide-react';
 
 import {
 	Sidebar,
@@ -33,9 +33,9 @@ export const items = [
 		icon: Sparkles,
 	},
 	{
-		title: 'Settings',
-		url: '#',
-		icon: Settings,
+		title: 'Profile',
+		url: '/profile',
+		icon: User,
 	},
 ];
 

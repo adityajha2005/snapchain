@@ -14,7 +14,7 @@ const AIChatPage = () => {
 	const [messages, setMessages] = useState<Message[]>([
 		{
 			id: "1",
-			content: "Hello! I'm your Web3 assistant. How can I help you today?",
+			content: "Hello! I'm your Solana program assistant. How can I help you today?",
 			role: "assistant",
 			timestamp: new Date(),
 		},
@@ -29,12 +29,12 @@ const AIChatPage = () => {
 
 	// Sample prompts that users might want to try
 	const samplePrompts = [
-		"How do I create an ERC-20 token?",
-		"Explain gas fees in Ethereum",
-		"What are smart contract security best practices?",
-		"How do I connect my dApp to a wallet?",
-		"Explain layer 2 scaling solutions",
-		"How does staking work?",
+		"How do I create a Solana program?",
+		"Explain rent exemption in Solana",
+		"What are Solana program security best practices?",
+		"How do I connect my dApp to a Solana wallet?",
+		"Explain Solana's architecture and consensus",
+		"How does staking work on Solana?",
 	];
 
 	// Scroll to bottom of messages
@@ -118,8 +118,7 @@ const AIChatPage = () => {
 								Welcome to SnapChain AI
 							</h2>
 							<p className="text-muted-foreground mb-6">
-								Ask anything about Web3, smart contracts, blockchain
-								development, or cryptocurrencies.
+								Ask anything about Solana programs, SPL tokens, Anchor framework, or Solana development.
 							</p>
 						</div>
 					)}
@@ -150,7 +149,7 @@ const AIChatPage = () => {
 												<BotIcon className="h-3.5 w-3.5" />
 											)}
 											<span className="text-xs font-medium opacity-90">
-												{message.role === "user" ? "You" : "AI Assistant"}
+												{message.role === "user" ? "You" : "Solana Assistant"}
 											</span>
 										</div>
 										<span className="text-[10px] opacity-60">
@@ -180,7 +179,7 @@ const AIChatPage = () => {
 									<div className="flex items-center gap-1.5 mb-1">
 										<BotIcon className="h-3.5 w-3.5" />
 										<span className="text-xs font-medium opacity-90">
-											AI Assistant
+											Solana Assistant
 										</span>
 									</div>
 									<div className="flex items-center space-x-1">
@@ -253,7 +252,7 @@ const AIChatPage = () => {
 							type="text"
 							value={input}
 							onChange={(e) => setInput(e.target.value)}
-							placeholder="Ask anything about Web3, smart contracts, or blockchain..."
+							placeholder="Ask anything about Solana programs, Anchor, or Solana development..."
 							className="w-full p-3 pr-12 rounded-md border border-border bg-background focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors outline-none"
 						/>
 						<button
@@ -264,9 +263,7 @@ const AIChatPage = () => {
 							<Send className="h-4 w-4" />
 						</button>
 					</form>
-					<p className="text-xs text-muted-foreground mt-2 text-center">
-						Powered by Together AI's Llama 3 model
-					</p>
+					
 				</div>
 			</div>
 		</div>
