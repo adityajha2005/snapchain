@@ -30,18 +30,10 @@ export default NextAuth(authConfig).auth((req)=> {
 )
 // Configure middleware matchers
 export const config = {
-  matcher: [
-    // Protected routes
-    '/dashboard/:path*',
-    '/ai-chat/:path*',
-    '/profile/:path*',
-    '/contracts/:path*',
-    '/(app)/:path*',
-    
-    // Auth page for redirect handling
-    '/auth',
-    
-    // All pages except static assets and API routes
-    '/((?!api|_next/static|_next/image|favicon.ico|assets).*)',
-  ],
+	matcher: [
+		// Skip Next.js internals and all static files, unless found in search params
+		'/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+		// Always run for API routes
+		'/(api|trpc)(.*)',
+	],
 };
