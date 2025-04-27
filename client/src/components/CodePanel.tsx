@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { Clipboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface CodePanelProps {
 	code: string;
@@ -37,23 +37,23 @@ const CodePanel: React.FC<CodePanelProps> = ({ code, isBlurred = true }) => {
 	};
 
 	return (
-		<div className="flex flex-col h-full bg-zinc-900 rounded-md relative">
+		<div className="flex flex-col h-full bg-white rounded-md relative">
 			{/* Blur overlay */}
 			{isBlurred && (
-				<div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-md z-10 rounded-md flex items-center justify-center">
-					<span className="text-zinc-400 text-sm">Click "Refine Contract" to view the optimized code</span>
+				<div className="absolute inset-0 bg-slate-100/50 backdrop-blur-md z-10 rounded-md flex items-center justify-center">
+					<span className="text-slate-600 text-sm">Click &quot;Refine Contract&quot; to view the optimized code</span>
 				</div>
 			)}
 			
 			{/* Content */}
-			<div className="flex justify-between items-center p-2 bg-zinc-800 rounded-t-md">
-				<span className="text-sm font-medium text-zinc-200">
+			<div className="flex justify-between items-center p-2 bg-slate-100 rounded-t-md">
+				<span className="text-sm font-medium text-slate-700">
 					Generated Rust Code
 				</span>
 				<Button
 					size="sm"
 					variant="ghost"
-					className="h-8 w-8 p-0 text-zinc-400 hover:text-zinc-100"
+					className="h-8 w-8 p-0 text-slate-500 hover:text-slate-800"
 					onClick={copyToClipboard}
 					disabled={isBlurred}
 				>
@@ -63,12 +63,12 @@ const CodePanel: React.FC<CodePanelProps> = ({ code, isBlurred = true }) => {
 			<div className="flex-grow overflow-auto" ref={highlighterRef}>
 				<SyntaxHighlighter
 					language="rust"
-					style={atomDark}
+					style={oneLight}
 					customStyle={{
 						margin: 0,
 						borderRadius: 0,
 						minHeight: '100%',
-						background: '#18181b',
+						background: '#ffffff',
 						fontSize: '0.875rem',
 					}}
 					showLineNumbers={true}

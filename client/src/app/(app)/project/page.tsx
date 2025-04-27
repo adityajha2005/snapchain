@@ -1,15 +1,15 @@
-"use client";
-import React, { useState, useEffect } from "react";
-import * as Blockly from "blockly";
-import { initialToolbox } from "@/utils/blocklyConfig";
-import { rustGenerator } from "@/utils/rustGenerator";
-import BlocklyWorkspace from "@/components/BlocklyWorkspace";
-import CodePanel from "@/components/CodePanel";
-import SmartContractChat from "@/components/SmartContractChat";
+'use client';
+import React, { useState } from 'react';
+import { Bot, X } from 'lucide-react';
+import BlocklyWorkspace from '@/components/BlocklyWorkspace';
+import CodePanel from '@/components/CodePanel';
+import SmartContractChat from '@/components/SmartContractChat';
+import { Button } from '@/components/ui/button';
 
 const ProjectPage = () => {
-	const [generatedCode, setGeneratedCode] = useState<string>("");
+	const [generatedCode, setGeneratedCode] = useState<string>('');
 	const [isCodeBlurred, setIsCodeBlurred] = useState(true);
+	const [isChatPanelOpen, setIsChatPanelOpen] = useState(false);
 
 	const handleCodeChange = (code: string) => {
 		setGeneratedCode(code);
@@ -24,33 +24,71 @@ const ProjectPage = () => {
 	};
 
 	const handleRefineContract = () => {
+		setIsChatPanelOpen(true);
 		setIsCodeBlurred(false);
 	};
 
+	const toggleChatPanel = () => {
+		setIsChatPanelOpen(!isChatPanelOpen);
+	};
+
 	return (
-		<div className="flex flex-col h-screen bg-zinc-950 text-zinc-50">
-			<div className="flex-grow flex flex-col lg:flex-row overflow-hidden">
+		<div className='flex flex-col h-screen bg-white text-slate-800 relative overflow-hidden'>
+			{/* Chat Button */}
+			<div className=''>
+				<Button
+					onClick={toggleChatPanel}
+					variant='outline'
+					size='icon'
+					className='fixed z-40 right-6 top-1/2 -translate-y-1/2 rounded-full h-12 w-12 bg-white border border-slate-200 shadow-md'
+				>
+					<Bot className='h-5 w-5 text-slate-600' />
+					<span className='sr-only'>Chat Assistant</span>
+				</Button>
+			</div>
+
+			<div className='w-screen h-full relative'>
 				{/* Blockly Workspace */}
-				<div className="w-full lg:w-1/2 h-1/2 lg:h-full border-r border-zinc-800 overflow-hidden">
-					<BlocklyWorkspace 
-						onCodeChange={handleCodeChange} 
+				<div className='w-full overflow-hidden h-full'>
+					<BlocklyWorkspace
+						onCodeChange={handleCodeChange}
 						onRefineContract={handleRefineContract}
 					/>
 				</div>
-				<div className="w-full lg:w-1/2 h-1/2 lg:h-full flex flex-col">
+			</div>
+				<div
+					className='absolute top-0 mt-[60px] overflow-hidden right-0 w-2/5 z-50 h-[calc(100%-60px)] bg-white border rounded-2xl border-border shadow-md transition-transform duration-300 ease-in-out'
+					style={{ opacity: isChatPanelOpen ? 1 : 0, display: isChatPanelOpen ? '' : 'none' }}
+				>
+					{/* Close button */}
+					<div>
+						<Button
+							onClick={toggleChatPanel}
+							variant='ghost'
+							size='icon'
+							className='absolute right-0 top-0 z-[100] bg-black/70 rounded-full h-8 w-8 hover:bg-black'
+						>
+							<X className='h-4 w-4 text-white' />
+							<span className='sr-only'>Close</span>
+						</Button>
+					</div>
+
 					{/* Code Panel */}
-					<div className="h-1/2 border-b border-zinc-800 p-4">
-						<CodePanel code={generatedCode} isBlurred={isCodeBlurred} />
+					<div className='h-1/2 border-b border-slate-200 p-4 '>
+						<CodePanel
+							code={generatedCode}
+							isBlurred={isCodeBlurred}
+						/>
 					</div>
 					{/* Smart Contract Chat Assistant */}
-					<div className="h-1/2 overflow-hidden">
-						<SmartContractChat 
-							currentCode={generatedCode} 
+					<div className='h-1/2 overflow-hidden '>
+						<SmartContractChat
+							currentCode={generatedCode}
 							onUpdateCode={handleCodeUpdateFromChat}
 						/>
 					</div>
 				</div>
-			</div>
+	
 		</div>
 	);
 };
