@@ -464,6 +464,31 @@ Return the improved code in a code block using \`\`\`rust\`\`\` format.`,
 						.blocklyFlyoutButtonShadow {
 							display: none;
 						}
+						.blocklyTooltipDiv {
+							background-color: #ffffff !important;
+							border: 2px solid #e2e8f0 !important;
+							box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+							border-radius: 6px !important;
+							padding: 8px 12px !important;
+							font-family: ui-sans-serif, system-ui, -apple-system !important;
+							font-size: 13px !important;
+							color: #334155 !important;
+							max-width: 300px !important;
+							z-index: 100 !important;
+							transition: opacity 0.1s !important; /* Fast transition */
+							opacity: 1 !important;
+						}
+						/* Override Blockly's default tooltip delay */
+						.blockly-tooltip-div-show {
+							opacity: 1 !important;
+							transition-delay: 0.1s !important; /* Reduced delay before showing */
+						}
+						@media (min-width: 768px) {
+							.blocklyTooltipDiv {
+								font-size: 14px !important;
+								padding: 10px 14px !important;
+							}
+						}
 						.blocklyScrollbarVertical,
 						.blocklyFlyoutScrollbar {
 							display: none !important;
