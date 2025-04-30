@@ -20,7 +20,7 @@ interface SmartContractChatProps {
 	onUpdateCode?: (newCode: string) => void;
 }
 
-const SmartContractChat = ({ currentCode, onUpdateCode }: SmartContractChatProps) => {
+const 	SmartContractChat = ({ currentCode, onUpdateCode }: SmartContractChatProps) => {
 	const [messages, setMessages] = useState<Message[]>([
 		{
 			id: '1',

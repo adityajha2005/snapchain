@@ -18,7 +18,7 @@ if (typeof window !== "undefined") {
 	defineCustomBlocks();
 
 	// Generator for Solana program block
-	rustGenerator.forBlock["solana_program"] = function (block: any) {
+	rustGenerator.forBlock["solana_program"] = function (block: Blockly.Block) {
 		const programName = block.getFieldValue("NAME");
 		const programBody = rustGenerator.statementToCode(block, "BODY");
 
@@ -29,7 +29,13 @@ if (typeof window !== "undefined") {
     msg,
     program_error::ProgramError,
     pubkey::Pubkey,
+    borsh::BorshDeserialize,
+    borsh::BorshSerialize,
+    system_instruction,
+    rent::Rent,
+    program::invoke,
 };
+use borsh::{BorshDeserialize, BorshSerialize};
 
 // Define program entrypoint
 entrypoint!(process_instruction);
@@ -54,11 +60,11 @@ pub fn process_instruction(
 	};
 
 	// Generator for Rust struct block
-	rustGenerator.forBlock["rust_struct"] = function (block: any) {
+	rustGenerator.forBlock["rust_struct"] = function (block: Blockly.Block) {
 		const structName = block.getFieldValue("NAME");
 		const fields = rustGenerator.statementToCode(block, "FIELDS");
 
-		const code = `#[derive(BorshSerialize, BorshDeserialize)]
+		const code = `#[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct ${structName} {
 ${fields}}
 
@@ -67,7 +73,7 @@ ${fields}}
 	};
 
 	// Generator for struct field block
-	rustGenerator.forBlock["struct_field"] = function (block: any) {
+	rustGenerator.forBlock["struct_field"] = function (block: Blockly.Block) {
 		const fieldName = block.getFieldValue("NAME");
 		const fieldType = block.getFieldValue("TYPE");
 
@@ -75,7 +81,7 @@ ${fields}}
 	};
 
 	// Generator for instruction processing block
-	rustGenerator.forBlock["process_instruction"] = function (block: any) {
+	rustGenerator.forBlock["process_instruction"] = function (block: Blockly.Block) {
 		const funcName = block.getFieldValue("NAME");
 		const params = rustGenerator.statementToCode(block, "PARAMS");
 		const body = rustGenerator.statementToCode(block, "BODY");
@@ -90,15 +96,15 @@ ${body}    Ok(())
 	};
 
 	// Generator for function parameter block
-	rustGenerator.forBlock["function_param"] = function (block: any) {
+	rustGenerator.forBlock["function_param"] = function (block: Blockly.Block) {
 		const paramName = block.getFieldValue("NAME");
 		const paramType = block.getFieldValue("TYPE");
 
-		return `${rustGenerator.INDENT}${paramType},\n`;
+		return `${rustGenerator.INDENT}${paramName}: ${paramType},\n`;
 	};
 
 	// Generator for account validation block
-	rustGenerator.forBlock["validate_accounts"] = function (block: any) {
+	rustGenerator.forBlock["validate_accounts"] = function (block: Blockly.Block) {
 		const minAccounts =
 			rustGenerator.valueToCode(block, "MIN_ACCOUNTS", ORDER_ATOMIC) || "2";
 
@@ -109,15 +115,14 @@ ${rustGenerator.INDENT}}\n`;
 	};
 
 	// Generator for get account block
-	rustGenerator.forBlock["get_account"] = function (block: any) {
-		const index = block.getFieldValue("INDEX");
+	rustGenerator.forBlock["get_account"] = function (block: Blockly.Block) {
 		const accountName = block.getFieldValue("NAME");
 
 		return `${rustGenerator.INDENT}let ${accountName} = next_account_info(account_iter)?;\n`;
 	};
 
 	// Generator for check account owner block
-	rustGenerator.forBlock["check_account_owner"] = function (block: any) {
+	rustGenerator.forBlock["check_account_owner"] = function (block: Blockly.Block) {
 		const account = block.getFieldValue("ACCOUNT");
 		const owner = block.getFieldValue("OWNER");
 
@@ -127,16 +132,17 @@ ${rustGenerator.INDENT}}\n`;
 	};
 
 	// Generator for deserialize account block
-	rustGenerator.forBlock["deserialize_account"] = function (block: any) {
+	rustGenerator.forBlock["deserialize_account"] = function (block: Blockly.Block) {
 		const account = block.getFieldValue("ACCOUNT");
 		const accountType = block.getFieldValue("TYPE");
 		const lowerType = accountType.toLowerCase();
 
-		return `${rustGenerator.INDENT}let ${lowerType} = ${accountType}::try_from_slice(&${account}.data.borrow())?;\n`;
+		return `${rustGenerator.INDENT}let mut ${lowerType}_data = ${account}.try_borrow_data()?;
+${rustGenerator.INDENT}let ${lowerType} = ${accountType}::try_from_slice(&${lowerType}_data)?;\n`;
 	};
 
 	// Generator for PDA creation block
-	rustGenerator.forBlock["create_pda"] = function (block: any) {
+	rustGenerator.forBlock["create_pda"] = function (block: Blockly.Block) {
 		const pdaName = block.getFieldValue("NAME");
 		const seeds = rustGenerator.statementToCode(block, "SEEDS");
 
@@ -156,7 +162,7 @@ ${rustGenerator.INDENT}let (${pdaName}, ${pdaName}_bump) = Pubkey::find_program_
 	};
 
 	// Generator for PDA seed block
-	rustGenerator.forBlock["pda_seed"] = function (block: any) {
+	rustGenerator.forBlock["pda_seed"] = function (block: Blockly.Block) {
 		const value = block.getFieldValue("VALUE");
 
 		if (value.startsWith('"') || value.startsWith("'")) {
@@ -167,18 +173,18 @@ ${rustGenerator.INDENT}let (${pdaName}, ${pdaName}_bump) = Pubkey::find_program_
 	};
 
 	// Generator for program error block
-	rustGenerator.forBlock["program_error"] = function (block: any) {
+	rustGenerator.forBlock["program_error"] = function (block: Blockly.Block) {
 		const errorType = block.getFieldValue("ERROR");
 
 		return `${rustGenerator.INDENT}return Err(${errorType});\n`;
 	};
 
 	// Generator for Rust enum block
-	rustGenerator.forBlock["rust_enum"] = function (block: any) {
+	rustGenerator.forBlock["rust_enum"] = function (block: Blockly.Block) {
 		const enumName = block.getFieldValue("NAME");
 		const variants = rustGenerator.statementToCode(block, "VARIANTS");
 
-		const code = `#[derive(BorshSerialize, BorshDeserialize)]
+		const code = `#[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub enum ${enumName} {
 ${variants}}
 
@@ -187,7 +193,7 @@ ${variants}}
 	};
 
 	// Generator for enum variant block
-	rustGenerator.forBlock["enum_variant"] = function (block: any) {
+	rustGenerator.forBlock["enum_variant"] = function (block: Blockly.Block) {
 		const variantName = block.getFieldValue("NAME");
 		const variantType = block.getFieldValue("TYPE");
 		const fields = rustGenerator.statementToCode(block, "FIELDS");
@@ -208,7 +214,7 @@ ${variants}}
 	};
 
 	// Generator for event emission block
-	rustGenerator.forBlock["emit_event"] = function (block: any) {
+	rustGenerator.forBlock["emit_event"] = function (block: Blockly.Block) {
 		const eventName = block.getFieldValue("NAME");
 		const fields = rustGenerator.statementToCode(block, "FIELDS");
 
@@ -216,7 +222,7 @@ ${variants}}
 	};
 
 	// Generator for CPI call block
-	rustGenerator.forBlock["cpi_call"] = function (block: any) {
+	rustGenerator.forBlock["cpi_call"] = function (block: Blockly.Block) {
 		const programId = block.getFieldValue("PROGRAM_ID");
 		const accounts = rustGenerator.statementToCode(block, "ACCOUNTS");
 		const data = rustGenerator.valueToCode(block, "DATA", ORDER_NONE) || "[]";
@@ -232,9 +238,8 @@ ${rustGenerator.INDENT})?;\n`;
 	};
 
 	// Generator for account initialization block
-	rustGenerator.forBlock["init_account"] = function (block: any) {
+	rustGenerator.forBlock["init_account"] = function (block: Blockly.Block) {
 		const accountName = block.getFieldValue("NAME");
-		const accountType = block.getFieldValue("TYPE");
 		const space = rustGenerator.valueToCode(block, "SPACE", ORDER_ATOMIC) || "0";
 
 		return `${rustGenerator.INDENT}let rent = Rent::get()?;
@@ -242,18 +247,18 @@ ${rustGenerator.INDENT}let space = ${space};
 ${rustGenerator.INDENT}let lamports = rent.minimum_balance(space as usize);
 ${rustGenerator.INDENT}invoke(
 ${rustGenerator.INDENT}${rustGenerator.INDENT}&system_instruction::create_account(
+${rustGenerator.INDENT}${rustGenerator.INDENT}${rustGenerator.INDENT}&payer.key(),
 ${rustGenerator.INDENT}${rustGenerator.INDENT}${rustGenerator.INDENT}&${accountName}.key(),
-${rustGenerator.INDENT}${rustGenerator.INDENT}${rustGenerator.INDENT}&program_id,
 ${rustGenerator.INDENT}${rustGenerator.INDENT}${rustGenerator.INDENT}lamports,
 ${rustGenerator.INDENT}${rustGenerator.INDENT}${rustGenerator.INDENT}space,
 ${rustGenerator.INDENT}${rustGenerator.INDENT}${rustGenerator.INDENT}&program_id,
 ${rustGenerator.INDENT}${rustGenerator.INDENT}),
-${rustGenerator.INDENT}${rustGenerator.INDENT}&[${accountName}.clone(), system_program.clone()]
+${rustGenerator.INDENT}${rustGenerator.INDENT}&[payer.clone(), ${accountName}.clone(), system_program.clone()]
 ${rustGenerator.INDENT})?;\n`;
 	};
 
 	// Generator for token operation block
-	rustGenerator.forBlock["token_operation"] = function (block: any) {
+	rustGenerator.forBlock["token_operation"] = function (block: Blockly.Block) {
 		const operation = block.getFieldValue("OPERATION");
 		const amount = rustGenerator.valueToCode(block, "AMOUNT", ORDER_ATOMIC) || "0";
 		const accounts = rustGenerator.statementToCode(block, "ACCOUNTS");
@@ -282,7 +287,7 @@ ${rustGenerator.INDENT})?;\n`;
 	};
 
 	// Generator for account constraint block
-	rustGenerator.forBlock["account_constraint"] = function (block: any) {
+	rustGenerator.forBlock["account_constraint"] = function (block: Blockly.Block) {
 		const account = block.getFieldValue("ACCOUNT");
 		const constraint = block.getFieldValue("CONSTRAINT");
 
@@ -313,7 +318,7 @@ ${rustGenerator.INDENT}}\n`;
 	};
 
 	// Generator for math operation block
-	rustGenerator.forBlock["math_operation"] = function (block: any) {
+	rustGenerator.forBlock["math_operation"] = function (block: Blockly.Block) {
 		const operation = block.getFieldValue("OPERATION");
 		const a = rustGenerator.valueToCode(block, "A", ORDER_ATOMIC) || "0";
 		const b = rustGenerator.valueToCode(block, "B", ORDER_ATOMIC) || "0";

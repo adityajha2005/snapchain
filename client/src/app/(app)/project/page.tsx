@@ -8,13 +8,13 @@ import { Button } from '@/components/ui/button';
 
 const ProjectPage = () => {
 	const [generatedCode, setGeneratedCode] = useState<string>('');
-	const [isCodeBlurred, setIsCodeBlurred] = useState(true);
+	const [isCodeBlurred, setIsCodeBlurred] = useState(false);
 	const [isChatPanelOpen, setIsChatPanelOpen] = useState(false);
 
 	const handleCodeChange = (code: string) => {
 		setGeneratedCode(code);
 		// Reset blur when code changes
-		setIsCodeBlurred(true);
+		setIsCodeBlurred(false);
 	};
 
 	// Function to handle code updates from the chat component
