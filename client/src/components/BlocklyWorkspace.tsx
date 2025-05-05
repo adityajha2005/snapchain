@@ -5,6 +5,7 @@ import * as Blockly from "blockly";
 import { rustGenerator } from "@/utils/rustGenerator";
 import { initialToolbox } from "@/utils/blocklyConfig";
 import { Zap, Rocket, Key, X, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import BlocklyErrorDisplay from "./BlocklyErrorDisplay";
 
 interface BlocklyWorkspaceProps {
 	onCodeChange: (code: string) => void;
@@ -16,6 +17,11 @@ interface DeploymentStatus {
 	address?: string;
 	balance?: number;
 	programId?: string;
+}
+
+interface CodeGenerationError {
+	message: string;
+	blockId?: string;
 }
 
 const BlocklyWorkspace: React.FC<BlocklyWorkspaceProps> = ({
@@ -36,6 +42,7 @@ const BlocklyWorkspace: React.FC<BlocklyWorkspaceProps> = ({
 		stage: 'idle',
 		message: ''
 	});
+	const [codegenError, setCodegenError] = useState<CodeGenerationError | null>(null);
 
 	// Generate Rust code when blocks change
 	const handleChange = (workspace: Blockly.WorkspaceSvg) => {
@@ -43,9 +50,23 @@ const BlocklyWorkspace: React.FC<BlocklyWorkspaceProps> = ({
 		
 		// Only update code if we're not using refined code
 		if (!isRefinedCode) {
-			const code = rustGenerator.workspaceToCode(workspace);
-			setCurrentCode(code);
-			onCodeChange(code);
+			try {
+				const code = rustGenerator.workspaceToCode(workspace);
+				setCurrentCode(code);
+				onCodeChange(code);
+				// Clear any previous errors since generation was successful
+				setCodegenError(null);
+			} catch (err: any) {
+				// Handle errors during code generation
+				console.error("Code generation error:", err);
+				setCodegenError({
+					message: err.message || "Unknown error during code generation",
+					blockId: err.blockId,
+				});
+				
+				// Still provide the previously valid code
+				onCodeChange(currentCode);
+			}
 		}
 	};
 
@@ -127,15 +148,24 @@ Return the improved code in a code block using \`\`\`rust\`\`\` format.`,
 			setIsRefinedCode(false);
 			setCurrentCode("");
 			onCodeChange("");
+			setCodegenError(null);
 		}
 	};
 
 	// Effect to sync code state on mount
 	useEffect(() => {
 		if (workspaceRef.current && !isRefinedCode) {
-			const code = rustGenerator.workspaceToCode(workspaceRef.current);
-			setCurrentCode(code);
-			onCodeChange(code);
+			try {
+				const code = rustGenerator.workspaceToCode(workspaceRef.current);
+				setCurrentCode(code);
+				onCodeChange(code);
+			} catch (err: any) {
+				console.error("Initial code generation error:", err);
+				setCodegenError({
+					message: err.message || "Unknown error during code generation",
+					blockId: err.blockId,
+				});
+			}
 		}
 	}, []);
 
@@ -243,6 +273,35 @@ Return the improved code in a code block using \`\`\`rust\`\`\` format.`,
 				return <AlertCircle className="h-5 w-5 text-red-500" />;
 			default:
 				return null;
+		}
+	};
+
+	// Highlight a problematic block in the workspace
+	const highlightProblemBlock = (blockId: string) => {
+		if (!workspaceRef.current) return;
+		
+		// Find the block by ID
+		const block = workspaceRef.current.getBlockById(blockId);
+		if (block) {
+			// Center the workspace on this block
+			workspaceRef.current.centerOnBlock(blockId);
+			
+			// Flash the block to draw attention to it
+			if (block.select) {
+				block.select();
+			}
+			
+			// Add a visual indicator by adding a temporary warning
+			if (block.setWarningText) {
+				block.setWarningText("This block caused an error");
+				
+				// Clear the warning after a few seconds
+				setTimeout(() => {
+					if (block && block.setWarningText) {
+						block.setWarningText(null);
+					}
+				}, 5000);
+			}
 		}
 	};
 
@@ -368,10 +427,20 @@ Return the improved code in a code block using \`\`\`rust\`\`\` format.`,
 							display: none;
 						}
 						.blocklyScrollbarVertical,
-.blocklyFlyoutScrollbar {
-	display: none !important;
-}
-
+						.blocklyFlyoutScrollbar {
+							display: none !important;
+						}
+						
+						/* Error styling */
+						.blocklyError {
+							fill: rgba(239, 68, 68, 0.2) !important; /* red-500 with opacity */
+							stroke: #ef4444 !important; /* red-500 */
+						}
+						
+						.blocklyErrorText {
+							fill: #ef4444 !important; /* red-500 */
+							font-weight: bold !important;
+						}
 					`}</style>
 					<ReactBlockly
 						toolboxConfiguration={initialToolbox}
@@ -432,6 +501,13 @@ Return the improved code in a code block using \`\`\`rust\`\`\` format.`,
 					<span>Ready</span>
 				</div>
 			</div>
+
+			{/* Error Display Component */}
+			<BlocklyErrorDisplay 
+				error={codegenError}
+				onDismiss={() => setCodegenError(null)}
+				onHighlightBlock={highlightProblemBlock}
+			/>
 
 			{/* Enhanced Keypair Selection Dialog */}
 			{showKeypairDialog && (

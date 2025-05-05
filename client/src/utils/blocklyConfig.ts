@@ -20,6 +20,308 @@ export const defineCustomBlocks = () => {
 				"https://docs.solana.com/developing/programming-model/overview",
 			);
 		},
+		onchange: function() {
+				// Check program name
+				const programName = this.getFieldValue("NAME");
+				if (!programName || programName === "") {
+					this.setWarningText("Program name is required");
+				} else if (!/^[a-z][a-z0-9_]*$/.test(programName)) {
+					this.setWarningText("Program name should be lowercase, start with a letter, and contain only letters, numbers, and underscores");
+				} else {
+					this.setWarningText(null);
+				}
+			}
+	};
+
+	// If control block (including else/elseif)
+	Blockly.Blocks["controls_if"] = {
+		init: function () {
+			this.appendValueInput("IF0")
+				.setCheck("Boolean")
+				.appendField("if");
+			this.appendStatementInput("DO0")
+				.appendField("do");
+			this.setPreviousStatement(true, null);
+			this.setNextStatement(true, null);
+			this.setColour(210);
+			this.setHelpUrl("https://docs.rs/solana-program/latest/solana_program/");
+			
+			// Add mutator for adding else/elseif
+			this.setMutator(new Blockly.Mutator(['controls_if_elseif', 'controls_if_else']));
+			
+			// Initialize internal state
+			this.elseifCount_ = 0;
+			this.elseCount_ = 0;
+		},
+		
+		mutationToDom: function() {
+			// Save mutation state
+			if (!this.elseifCount_ && !this.elseCount_) {
+				return null;
+			}
+			const container = document.createElement('mutation');
+			if (this.elseifCount_) {
+				container.setAttribute('elseif', this.elseifCount_);
+			}
+			if (this.elseCount_) {
+				container.setAttribute('else', 1);
+			}
+			return container;
+		},
+		
+		domToMutation: function(xmlElement) {
+			// Restore mutation state
+			this.elseifCount_ = parseInt(xmlElement.getAttribute('elseif') || '0', 10);
+			this.elseCount_ = parseInt(xmlElement.getAttribute('else') || '0', 10);
+			this.rebuildShape_();
+		},
+		
+		decompose: function(workspace) {
+			// Define mutator UI
+			const containerBlock = workspace.newBlock('controls_if_if');
+			containerBlock.initSvg();
+			let connection = containerBlock.nextConnection;
+			for (let i = 1; i <= this.elseifCount_; i++) {
+				const elseifBlock = workspace.newBlock('controls_if_elseif');
+				elseifBlock.initSvg();
+				connection.connect(elseifBlock.previousConnection);
+				connection = elseifBlock.nextConnection;
+			}
+			if (this.elseCount_) {
+				const elseBlock = workspace.newBlock('controls_if_else');
+				elseBlock.initSvg();
+				connection.connect(elseBlock.previousConnection);
+			}
+			return containerBlock;
+		},
+		
+		compose: function(containerBlock) {
+			// Recreate block from mutator
+			let clauseBlock = containerBlock.nextConnection.targetBlock();
+			// Count number of inputs.
+			this.elseifCount_ = 0;
+			this.elseCount_ = 0;
+			const valueConnections = [null];
+			const statementConnections = [null];
+			let elseStatementConnection = null;
+			while (clauseBlock) {
+				switch (clauseBlock.type) {
+					case 'controls_if_elseif':
+						this.elseifCount_++;
+						valueConnections.push(clauseBlock.valueConnection_);
+						statementConnections.push(clauseBlock.statementConnection_);
+						break;
+					case 'controls_if_else':
+						this.elseCount_++;
+						elseStatementConnection = clauseBlock.statementConnection_;
+						break;
+					default:
+						throw new Error('Unknown block type: ' + clauseBlock.type);
+				}
+				clauseBlock = clauseBlock.nextConnection &&
+					clauseBlock.nextConnection.targetBlock();
+			}
+			this.rebuildShape_();
+			
+			// Reconnect all inputs
+			for (let i = 1; i <= this.elseifCount_; i++) {
+				Blockly.Mutator.reconnect(valueConnections[i], this, 'IF' + i);
+				Blockly.Mutator.reconnect(statementConnections[i], this, 'DO' + i);
+			}
+			Blockly.Mutator.reconnect(elseStatementConnection, this, 'ELSE');
+		},
+		
+		saveConnections: function(containerBlock) {
+			// Store connection info for mutator
+			let clauseBlock = containerBlock.nextConnection.targetBlock();
+			let i = 1;
+			while (clauseBlock) {
+				switch (clauseBlock.type) {
+					case 'controls_if_elseif':
+						const inputIf = this.getInput('IF' + i);
+						const inputDo = this.getInput('DO' + i);
+						clauseBlock.valueConnection_ =
+							inputIf && inputIf.connection.targetConnection;
+						clauseBlock.statementConnection_ =
+							inputDo && inputDo.connection.targetConnection;
+						i++;
+						break;
+					case 'controls_if_else':
+						const inputElse = this.getInput('ELSE');
+						clauseBlock.statementConnection_ =
+							inputElse && inputElse.connection.targetConnection;
+						break;
+					default:
+						throw new Error('Unknown block type: ' + clauseBlock.type);
+				}
+				clauseBlock = clauseBlock.nextConnection &&
+					clauseBlock.nextConnection.targetBlock();
+			}
+		},
+		
+		rebuildShape_: function() {
+			// Rebuild the block with new inputs
+			const valueConnections = [null];
+			const statementConnections = [null];
+			let elseStatementConnection = null;
+			
+			if (this.getInput('ELSE')) {
+				elseStatementConnection = this.getInput('ELSE').connection.targetConnection;
+			}
+			
+			for (let i = 1; i <= this.elseifCount_; i++) {
+				const inputIf = this.getInput('IF' + i);
+				const inputDo = this.getInput('DO' + i);
+				if (inputIf) {
+					valueConnections.push(inputIf.connection.targetConnection);
+				}
+				if (inputDo) {
+					statementConnections.push(inputDo.connection.targetConnection);
+				}
+			}
+			
+			// Delete everything
+			if (this.getInput('ELSE')) {
+				this.removeInput('ELSE');
+			}
+			for (let i = 1; i <= this.elseifCount_; i++) {
+				this.removeInput('IF' + i);
+				this.removeInput('DO' + i);
+			}
+			
+			// Rebuild
+			for (let i = 1; i <= this.elseifCount_; i++) {
+				this.appendValueInput('IF' + i)
+					.setCheck('Boolean')
+					.appendField("else if");
+				this.appendStatementInput('DO' + i);
+			}
+			if (this.elseCount_) {
+				this.appendStatementInput('ELSE')
+					.appendField('else');
+			}
+			
+			// Reconnect
+			for (let i = 1; i <= this.elseifCount_; i++) {
+				Blockly.Mutator.reconnect(valueConnections[i], this, 'IF' + i);
+				Blockly.Mutator.reconnect(statementConnections[i], this, 'DO' + i);
+			}
+			Blockly.Mutator.reconnect(elseStatementConnection, this, 'ELSE');
+		},
+		
+		onchange: function() {
+			// Validate all conditions
+			const hasEmptyInput = (input) => {
+				return !input.connection.targetBlock();
+			};
+			
+			let warnings = [];
+			
+			// Check IF0 condition
+			if (hasEmptyInput(this.getInput('IF0'))) {
+				warnings.push("Main IF condition is missing");
+			}
+			
+			// Check else-if conditions
+			for (let i = 1; i <= this.elseifCount_; i++) {
+				if (hasEmptyInput(this.getInput('IF' + i))) {
+					warnings.push(`ELSE IF ${i} condition is missing`);
+				}
+			}
+			
+			if (warnings.length > 0) {
+				this.setWarningText(warnings.join('\n'));
+			} else {
+				this.setWarningText(null);
+			}
+		}
+	};
+
+	// For loop control block
+	Blockly.Blocks["controls_for"] = {
+		init: function() {
+			this.appendDummyInput()
+				.appendField("for")
+				.appendField(new Blockly.FieldTextInput("i"), "VAR")
+				.appendField("in range");
+			this.appendValueInput("START")
+				.setCheck("Number")
+				.appendField("from");
+			this.appendValueInput("END")
+				.setCheck("Number")
+				.appendField("to");
+			this.appendValueInput("STEP")
+				.setCheck("Number")
+				.appendField("by");
+			this.appendStatementInput("DO")
+				.appendField("do");
+			this.setPreviousStatement(true, null);
+			this.setNextStatement(true, null);
+			this.setColour(210);
+			this.setTooltip("Create a for loop iterating over a range");
+			this.setHelpUrl("https://docs.rs/solana-program/latest/solana_program/");
+		},
+		
+		onchange: function() {
+			// Validate variable name
+			const varName = this.getFieldValue("VAR");
+			if (!varName || varName === "") {
+				this.setWarningText("Variable name is required");
+				return;
+			} else if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(varName)) {
+				this.setWarningText("Variable name should start with a letter and contain only letters, numbers, and underscores");
+				return;
+			}
+			
+			// Validate numerical inputs
+			const validateInput = (inputName, errorMsg) => {
+				const input = this.getInput(inputName);
+				if (!input.connection.targetBlock()) {
+					return errorMsg;
+				}
+				return null;
+			};
+			
+			const warnings = [];
+			const startError = validateInput("START", "Start value is required");
+			const endError = validateInput("END", "End value is required");
+			const stepError = validateInput("STEP", "Step value is required");
+			
+			if (startError) warnings.push(startError);
+			if (endError) warnings.push(endError);
+			if (stepError) warnings.push(stepError);
+			
+			if (warnings.length > 0) {
+				this.setWarningText(warnings.join("\n"));
+			} else {
+				this.setWarningText(null);
+			}
+		}
+	};
+
+	// While loop control block
+	Blockly.Blocks["controls_while"] = {
+		init: function() {
+			this.appendValueInput("BOOL")
+				.setCheck("Boolean")
+				.appendField("while");
+			this.appendStatementInput("DO")
+				.appendField("do");
+			this.setPreviousStatement(true, null);
+			this.setNextStatement(true, null);
+			this.setColour(210);
+			this.setTooltip("Create a while loop");
+			this.setHelpUrl("https://docs.rs/solana-program/latest/solana_program/");
+		},
+		
+		onchange: function() {
+			// Validate condition
+			if (!this.getInput("BOOL").connection.targetBlock()) {
+				this.setWarningText("While condition is required");
+			} else {
+				this.setWarningText(null);
+			}
+		}
 	};
 
 	// Struct Definition block
@@ -35,6 +337,23 @@ export const defineCustomBlocks = () => {
 			this.setTooltip("Define a Rust struct");
 			this.setHelpUrl("");
 		},
+		onchange: function() {
+			// Check struct name
+			const structName = this.getFieldValue("NAME");
+			if (!structName || structName === "") {
+				this.setWarningText("Struct name is required");
+			} else if (!/^[A-Z][A-Za-z0-9]*$/.test(structName)) {
+				this.setWarningText("Struct name should start with an uppercase letter and use CamelCase");
+			} else {
+				this.setWarningText(null);
+			}
+			
+			// Check if fields are defined
+			const fieldsConnection = this.getInput("FIELDS").connection;
+			if (!fieldsConnection.targetBlock()) {
+				this.setWarningText("Add at least one field to the struct");
+			}
+		}
 	};
 
 	// Struct Field block
@@ -67,6 +386,23 @@ export const defineCustomBlocks = () => {
 			this.setTooltip("Add a field to a struct");
 			this.setHelpUrl("");
 		},
+		onchange: function() {
+			// Check field name
+			const fieldName = this.getFieldValue("NAME");
+			if (!fieldName || fieldName === "") {
+				this.setWarningText("Field name is required");
+			} else if (!/^[a-z][a-z0-9_]*$/.test(fieldName)) {
+				this.setWarningText("Field name should be snake_case (lowercase with underscores)");
+			} else {
+				this.setWarningText(null);
+			}
+			
+			// Check parent block
+			let parent = this.getParent();
+			if (!parent || parent.type !== "rust_struct") {
+				this.setWarningText("Field must be inside a struct");
+			}
+		}
 	};
 
 	// Instruction Processing block
@@ -85,6 +421,23 @@ export const defineCustomBlocks = () => {
 			this.setTooltip("Define a function to process an instruction");
 			this.setHelpUrl("");
 		},
+		onchange: function() {
+			// Check function name
+			const funcName = this.getFieldValue("NAME");
+			if (!funcName || funcName === "") {
+				this.setWarningText("Function name is required");
+			} else if (!/^[a-z][a-z0-9_]*$/.test(funcName)) {
+				this.setWarningText("Function name should be snake_case (lowercase with underscores)");
+			} else {
+				this.setWarningText(null);
+			}
+			
+			// Check parent block 
+			let parent = this.getParent();
+			if (!parent || parent.type !== "solana_program") {
+				this.setWarningText("Instruction processor must be inside a Solana program");
+			}
+		}
 	};
 
 	// Function Parameter block
@@ -108,6 +461,23 @@ export const defineCustomBlocks = () => {
 			this.setTooltip("Add a parameter to a function");
 			this.setHelpUrl("");
 		},
+		onchange: function() {
+			// Check param name
+			const paramName = this.getFieldValue("NAME");
+			if (!paramName || paramName === "") {
+				this.setWarningText("Parameter name is required");
+			} else if (!/^[a-z][a-z0-9_]*$/.test(paramName)) {
+				this.setWarningText("Parameter name should be snake_case (lowercase with underscores)");
+			} else {
+				this.setWarningText(null);
+			}
+			
+			// Check parent
+			let parent = this.getParent();
+			if (!parent || parent.type !== "process_instruction") {
+				this.setWarningText("Parameter must be inside a process instruction block");
+			}
+		}
 	};
 
 	// Account Validation block
@@ -124,6 +494,15 @@ export const defineCustomBlocks = () => {
 			this.setTooltip("Validate the number of accounts");
 			this.setHelpUrl("");
 		},
+		onchange: function() {
+			// Check min accounts value
+			const minAccountsInput = this.getInput("MIN_ACCOUNTS");
+			if (!minAccountsInput.connection.targetBlock()) {
+				this.setWarningText("Minimum number of accounts is required");
+			} else {
+				this.setWarningText(null);
+			}
+		}
 	};
 
 	// Get Account block
@@ -140,6 +519,23 @@ export const defineCustomBlocks = () => {
 			this.setTooltip("Get an account from the accounts array");
 			this.setHelpUrl("");
 		},
+		onchange: function() {
+			// Check account name
+			const accountName = this.getFieldValue("NAME");
+			if (!accountName || accountName === "") {
+				this.setWarningText("Account name is required");
+			} else if (!/^[a-z][a-z0-9_]*$/.test(accountName)) {
+				this.setWarningText("Account name should be snake_case (lowercase with underscores)");
+			} else {
+				this.setWarningText(null);
+			}
+			
+			// Check index
+			const index = this.getFieldValue("INDEX");
+			if (index < 0) {
+				this.setWarningText("Account index must be non-negative");
+			}
+		}
 	};
 
 	// Check Account Owner block
@@ -162,6 +558,17 @@ export const defineCustomBlocks = () => {
 			this.setTooltip("Check if an account is owned by a specific program");
 			this.setHelpUrl("");
 		},
+		onchange: function() {
+			// Check account name
+			const accountName = this.getFieldValue("ACCOUNT");
+			if (!accountName || accountName === "") {
+				this.setWarningText("Account name is required");
+			} else if (!/^[a-z][a-z0-9_]*$/.test(accountName)) {
+				this.setWarningText("Account name should be snake_case (lowercase with underscores)");
+			} else {
+				this.setWarningText(null);
+			}
+		}
 	};
 
 	// Deserialize Account Data block
@@ -178,6 +585,25 @@ export const defineCustomBlocks = () => {
 			this.setTooltip("Deserialize account data into a specific type");
 			this.setHelpUrl("");
 		},
+		onchange: function() {
+			// Check account name
+			const accountName = this.getFieldValue("ACCOUNT");
+			if (!accountName || accountName === "") {
+				this.setWarningText("Account name is required");
+			} else if (!/^[a-z][a-z0-9_]*$/.test(accountName)) {
+				this.setWarningText("Account name should be snake_case (lowercase with underscores)");
+			} else {
+				this.setWarningText(null);
+			}
+			
+			// Check type name
+			const typeName = this.getFieldValue("TYPE");
+			if (!typeName || typeName === "") {
+				this.setWarningText("Type name is required");
+			} else if (!/^[A-Z][A-Za-z0-9]*$/.test(typeName)) {
+				this.setWarningText("Type name should start with an uppercase letter and use CamelCase");
+			}
+		}
 	};
 
 	// PDA Creation block
@@ -193,6 +619,23 @@ export const defineCustomBlocks = () => {
 			this.setTooltip("Create a Program Derived Address (PDA)");
 			this.setHelpUrl("");
 		},
+		onchange: function() {
+			// Check PDA name
+			const pdaName = this.getFieldValue("NAME");
+			if (!pdaName || pdaName === "") {
+				this.setWarningText("PDA name is required");
+			} else if (!/^[a-z][a-z0-9_]*$/.test(pdaName)) {
+				this.setWarningText("PDA name should be snake_case (lowercase with underscores)");
+			} else {
+				this.setWarningText(null);
+			}
+			
+			// Check seeds
+			const seedsConnection = this.getInput("SEEDS").connection;
+			if (!seedsConnection.targetBlock()) {
+				this.setWarningText("At least one seed is required for a PDA");
+			}
+		}
 	};
 
 	// PDA Seed block
@@ -207,6 +650,21 @@ export const defineCustomBlocks = () => {
 			this.setTooltip("Add a seed for PDA creation");
 			this.setHelpUrl("");
 		},
+		onchange: function() {
+			// Check seed value
+			const seedValue = this.getFieldValue("VALUE");
+			if (!seedValue || seedValue === "") {
+				this.setWarningText("Seed value is required");
+			} else {
+				this.setWarningText(null);
+			}
+			
+			// Check parent
+			let parent = this.getParent();
+			if (!parent || parent.type !== "create_pda") {
+				this.setWarningText("Seed must be inside a PDA block");
+			}
+		}
 	};
 
 	// Error block
@@ -228,7 +686,7 @@ export const defineCustomBlocks = () => {
 			this.setColour(360);
 			this.setTooltip("Return a program error");
 			this.setHelpUrl("");
-		},
+		}
 	};
 
 	// Enum Definition block
@@ -244,6 +702,23 @@ export const defineCustomBlocks = () => {
 			this.setTooltip("Define a Rust enum");
 			this.setHelpUrl("");
 		},
+		onchange: function() {
+			// Check enum name
+			const enumName = this.getFieldValue("NAME");
+			if (!enumName || enumName === "") {
+				this.setWarningText("Enum name is required");
+			} else if (!/^[A-Z][A-Za-z0-9]*$/.test(enumName)) {
+				this.setWarningText("Enum name should start with an uppercase letter and use CamelCase");
+			} else {
+				this.setWarningText(null);
+			}
+			
+			// Check variants
+			const variantsConnection = this.getInput("VARIANTS").connection;
+			if (!variantsConnection.targetBlock()) {
+				this.setWarningText("Add at least one variant to the enum");
+			}
+		}
 	};
 
 	// Enum Variant block
@@ -267,6 +742,23 @@ export const defineCustomBlocks = () => {
 			this.setTooltip("Add a variant to an enum");
 			this.setHelpUrl("");
 		},
+		onchange: function() {
+			// Check variant name
+			const variantName = this.getFieldValue("NAME");
+			if (!variantName || variantName === "") {
+				this.setWarningText("Variant name is required");
+			} else if (!/^[A-Z][A-Za-z0-9]*$/.test(variantName)) {
+				this.setWarningText("Variant name should start with an uppercase letter and use CamelCase");
+			} else {
+				this.setWarningText(null);
+			}
+			
+			// Check parent
+			let parent = this.getParent();
+			if (!parent || parent.type !== "rust_enum") {
+				this.setWarningText("Variant must be inside an enum");
+			}
+		}
 	};
 
 	// Event Definition block
@@ -282,6 +774,15 @@ export const defineCustomBlocks = () => {
 			this.setTooltip("Emit a program event");
 			this.setHelpUrl("");
 		},
+		onchange: function() {
+			// Check event name
+			const eventName = this.getFieldValue("NAME");
+			if (!eventName || eventName === "") {
+				this.setWarningText("Event name is required");
+			} else {
+				this.setWarningText(null);
+			}
+		}
 	};
 
 	// Cross Program Invocation block
@@ -300,6 +801,21 @@ export const defineCustomBlocks = () => {
 			this.setTooltip("Make a cross-program invocation");
 			this.setHelpUrl("");
 		},
+		onchange: function() {
+			// Check program ID
+			const programId = this.getFieldValue("PROGRAM_ID");
+			if (!programId || programId === "") {
+				this.setWarningText("Program ID is required");
+			} else {
+				this.setWarningText(null);
+			}
+			
+			// Check data
+			const dataInput = this.getInput("DATA");
+			if (!dataInput.connection.targetBlock()) {
+				this.setWarningText("Instruction data is required");
+			}
+		}
 	};
 
 	// Account Initialization block
@@ -319,6 +835,31 @@ export const defineCustomBlocks = () => {
 			this.setTooltip("Initialize a new program account");
 			this.setHelpUrl("");
 		},
+		onchange: function() {
+			// Check account name
+			const accountName = this.getFieldValue("NAME");
+			if (!accountName || accountName === "") {
+				this.setWarningText("Account name is required");
+			} else if (!/^[a-z][a-z0-9_]*$/.test(accountName)) {
+				this.setWarningText("Account name should be snake_case (lowercase with underscores)");
+			} else {
+				this.setWarningText(null);
+			}
+			
+			// Check account type
+			const typeName = this.getFieldValue("TYPE");
+			if (!typeName || typeName === "") {
+				this.setWarningText("Account type is required");
+			} else if (!/^[A-Z][A-Za-z0-9]*$/.test(typeName)) {
+				this.setWarningText("Account type should start with an uppercase letter and use CamelCase");
+			}
+			
+			// Check space value
+			const spaceInput = this.getInput("SPACE");
+			if (!spaceInput.connection.targetBlock()) {
+				this.setWarningText("Space size is required");
+			}
+		}
 	};
 
 	// Token Operation block
@@ -345,6 +886,21 @@ export const defineCustomBlocks = () => {
 			this.setTooltip("Perform a token operation");
 			this.setHelpUrl("");
 		},
+		onchange: function() {
+			// Check amount
+			const amountInput = this.getInput("AMOUNT");
+			if (!amountInput.connection.targetBlock()) {
+				this.setWarningText("Amount is required");
+			} else {
+				this.setWarningText(null);
+			}
+			
+			// Check accounts
+			const accountsConnection = this.getInput("ACCOUNTS").connection;
+			if (!accountsConnection.targetBlock()) {
+				this.setWarningText("At least one account is required for token operation");
+			}
+		}
 	};
 
 	// Account Constraint block
@@ -368,6 +924,17 @@ export const defineCustomBlocks = () => {
 			this.setTooltip("Add a constraint check for an account");
 			this.setHelpUrl("");
 		},
+		onchange: function() {
+			// Check account name
+			const accountName = this.getFieldValue("ACCOUNT");
+			if (!accountName || accountName === "") {
+				this.setWarningText("Account name is required");
+			} else if (!/^[a-z][a-z0-9_]*$/.test(accountName)) {
+				this.setWarningText("Account name should be snake_case (lowercase with underscores)");
+			} else {
+				this.setWarningText(null);
+			}
+		}
 	};
 
 	// Math Operation block
@@ -392,6 +959,182 @@ export const defineCustomBlocks = () => {
 			this.setTooltip("Perform a math operation");
 			this.setHelpUrl("");
 		},
+		onchange: function() {
+			// Check both inputs
+			const inputA = this.getInput("A");
+			const inputB = this.getInput("B");
+			
+			if (!inputA.connection.targetBlock() || !inputB.connection.targetBlock()) {
+				this.setWarningText("Both operands are required");
+			} else {
+				this.setWarningText(null);
+			}
+			
+			// Check for division by zero
+			const operation = this.getFieldValue("OPERATION");
+			if (operation === "DIV") {
+				const blockB = inputB.connection.targetBlock();
+				if (blockB && blockB.type === "math_number" && blockB.getFieldValue("NUM") === "0") {
+					this.setWarningText("Division by zero is not allowed");
+				}
+			}
+		}
+	};
+
+	// Boolean blocks for control structures
+	Blockly.Blocks["logic_boolean"] = {
+		init: function() {
+			this.appendDummyInput()
+				.appendField(new Blockly.FieldDropdown([
+					["true", "TRUE"],
+					["false", "FALSE"]
+				]), "BOOL");
+			this.setOutput(true, "Boolean");
+			this.setColour(210);
+			this.setTooltip("Returns either true or false");
+			this.setHelpUrl("");
+		}
+	};
+
+	Blockly.Blocks["logic_compare"] = {
+		init: function() {
+			this.appendValueInput("A");
+			this.appendDummyInput()
+				.appendField(new Blockly.FieldDropdown([
+					["=", "EQ"],
+					["\u2260", "NEQ"],
+					[">", "GT"],
+					["\u2265", "GTE"],
+					["<", "LT"],
+					["\u2264", "LTE"],
+				]), "OP");
+			this.appendValueInput("B");
+			this.setInputsInline(true);
+			this.setOutput(true, "Boolean");
+			this.setColour(210);
+			this.setTooltip("Compare two values with the selected operation");
+			this.setHelpUrl("");
+		},
+		onchange: function() {
+			// Check both inputs
+			const inputA = this.getInput("A");
+			const inputB = this.getInput("B");
+			
+			if (!inputA.connection.targetBlock() || !inputB.connection.targetBlock()) {
+				this.setWarningText("Both comparison values are required");
+			} else {
+				this.setWarningText(null);
+			}
+		}
+	};
+
+	// Logic Operation block (AND, OR)
+	Blockly.Blocks["logic_operation"] = {
+		init: function() {
+			this.appendValueInput("A")
+				.setCheck("Boolean");
+			this.appendDummyInput()
+				.appendField(new Blockly.FieldDropdown([
+					["AND", "AND"],
+					["OR", "OR"]
+				]), "OP");
+			this.appendValueInput("B")
+				.setCheck("Boolean");
+			this.setInputsInline(true);
+			this.setOutput(true, "Boolean");
+			this.setColour(210);
+			this.setTooltip("Returns true if both inputs have the same value");
+			this.setHelpUrl("");
+		},
+		onchange: function() {
+			// Check both inputs
+			const inputA = this.getInput("A");
+			const inputB = this.getInput("B");
+			
+			if (!inputA.connection.targetBlock() || !inputB.connection.targetBlock()) {
+				this.setWarningText("Both operands are required");
+			} else {
+				this.setWarningText(null);
+			}
+		}
+	};
+
+	// Logic Negate block (NOT)
+	Blockly.Blocks["logic_negate"] = {
+		init: function() {
+			this.appendValueInput("BOOL")
+				.setCheck("Boolean")
+				.appendField("NOT");
+			this.setOutput(true, "Boolean");
+			this.setColour(210);
+			this.setTooltip("Returns true if the input is false, and false if the input is true");
+			this.setHelpUrl("");
+		},
+		onchange: function() {
+			// Check input
+			const input = this.getInput("BOOL");
+			if (!input.connection.targetBlock()) {
+				this.setWarningText("Input is required");
+			} else {
+				this.setWarningText(null);
+			}
+		}
+	};
+
+	// Text block for string values
+	Blockly.Blocks["text"] = {
+		init: function() {
+			this.appendDummyInput()
+				.appendField(new Blockly.FieldTextInput(""), "TEXT");
+			this.setOutput(true, "String");
+			this.setColour(160);
+			this.setTooltip("A text string");
+			this.setHelpUrl("");
+		}
+	};
+
+	// Helper blocks for if mutator
+	Blockly.Blocks["controls_if_if"] = {
+		init: function() {
+			this.appendDummyInput().appendField("if");
+			this.setNextStatement(true);
+			this.setColour(210);
+			this.setTooltip("If block container for mutator");
+			this.contextMenu = false;
+		}
+	};
+
+	Blockly.Blocks["controls_if_elseif"] = {
+		init: function() {
+			this.appendDummyInput().appendField("else if");
+			this.setPreviousStatement(true);
+			this.setNextStatement(true);
+			this.setColour(210);
+			this.setTooltip("Else-if condition for if block");
+			this.contextMenu = false;
+		}
+	};
+
+	Blockly.Blocks["controls_if_else"] = {
+		init: function() {
+			this.appendDummyInput().appendField("else");
+			this.setPreviousStatement(true);
+			this.setColour(210);
+			this.setTooltip("Else condition for if block");
+			this.contextMenu = false;
+		}
+	};
+
+	// Number block
+	Blockly.Blocks["math_number"] = {
+		init: function() {
+			this.appendDummyInput()
+				.appendField(new Blockly.FieldNumber(0), "NUM");
+			this.setOutput(true, "Number");
+			this.setColour(230);
+			this.setTooltip("A number");
+			this.setHelpUrl("");
+		}
 	};
 };
 
@@ -408,6 +1151,41 @@ export const initialToolbox = {
 					kind: "block",
 					type: "solana_program",
 				},
+			],
+		},
+		{
+			kind: "category", 
+			name: "Control",
+			colour: "210",
+			contents: [
+				{
+					kind: "block",
+					type: "controls_if",
+				},
+				{
+					kind: "block",
+					type: "controls_for",
+				},
+				{
+					kind: "block",
+					type: "controls_while",
+				},
+				{
+					kind: "block",
+					type: "logic_boolean",
+				},
+				{
+					kind: "block",
+					type: "logic_compare",
+					},
+					{
+						kind: "block",
+						type: "logic_operation",
+					},
+					{
+						kind: "block",
+						type: "logic_negate",
+					},
 			],
 		},
 		{
@@ -471,17 +1249,13 @@ export const initialToolbox = {
 				},
 				{
 					kind: "block",
-					type: "init_account",
-				},
-				{
-					kind: "block",
 					type: "account_constraint",
 				},
 			],
 		},
 		{
 			kind: "category",
-			name: "PDAs",
+			name: "PDA",
 			colour: "60",
 			contents: [
 				{
@@ -502,6 +1276,10 @@ export const initialToolbox = {
 				{
 					kind: "block",
 					type: "token_operation",
+				},
+				{
+					kind: "block",
+					type: "init_account",
 				},
 			],
 		},
@@ -536,6 +1314,10 @@ export const initialToolbox = {
 					kind: "block",
 					type: "math_operation",
 				},
+				{
+					kind: "block",
+					type: "math_number",
+				},
 			],
 		},
 		{
@@ -551,3 +1333,26 @@ export const initialToolbox = {
 		},
 	],
 };
+
+// Helper function to check if a block is nested within a specific parent type
+export function isBlockInParent(block, parentType) {
+	let parent = block.getSurroundParent();
+	while (parent) {
+		if (parent.type === parentType) {
+			return true;
+		}
+		parent = parent.getSurroundParent();
+	}
+	return false;
+}
+
+// Error handling helper for codegen
+export function codegenError(block, message) {
+	const id = block.id;
+	throw {
+		message: message,
+		blockId: id,
+		block: block,
+		toString: function() { return `Code generation error at block #${id}: ${message}`; }
+	};
+}

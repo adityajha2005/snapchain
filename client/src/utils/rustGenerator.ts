@@ -12,6 +12,14 @@ rustGenerator.INDENT = "    ";
 // Define custom order constants for expressions
 const ORDER_NONE = 99;
 const ORDER_ATOMIC = 0;
+const ORDER_HIGH = 1;
+const ORDER_MULTIPLICATIVE = 2;
+const ORDER_ADDITIVE = 3;
+const ORDER_RELATIONAL = 4;
+const ORDER_AND = 5;
+const ORDER_OR = 6;
+const ORDER_ASSIGNMENT = 7;
+
 // Only run block definitions in browser environment
 if (typeof window !== "undefined") {
 	// Initialize custom blocks
@@ -20,6 +28,12 @@ if (typeof window !== "undefined") {
 	// Generator for Solana program block
 	rustGenerator.forBlock["solana_program"] = function (block: any) {
 		const programName = block.getFieldValue("NAME");
+		
+		// Validate required fields
+		if (!programName) {
+			throw codegenError(block, "Program name is required");
+		}
+		
 		const programBody = rustGenerator.statementToCode(block, "BODY");
 
 		const code = `use solana_program::{
@@ -35,30 +49,22 @@ if (typeof window !== "undefined") {
 entrypoint!(process_instruction);
 
 ${programBody}
-
-// Program entrypoint implementation
-pub fn process_instruction(
-    program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    instruction_data: &[u8],
-) -> ProgramResult {
-    msg!("${programName}: begin processing");
-    
-    // Add your instruction processing logic here
-    
-    msg!("${programName}: processing complete");
-    Ok(())
-}`;
-
+`;
 		return code;
 	};
 
 	// Generator for Rust struct block
 	rustGenerator.forBlock["rust_struct"] = function (block: any) {
 		const structName = block.getFieldValue("NAME");
+		
+		// Validate that the name is provided
+		if (!structName) {
+			throw codegenError(block, "Struct name is required");
+		}
+		
 		const fields = rustGenerator.statementToCode(block, "FIELDS");
 
-		const code = `#[derive(BorshSerialize, BorshDeserialize)]
+		const code = `#[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct ${structName} {
 ${fields}}
 
@@ -71,12 +77,23 @@ ${fields}}
 		const fieldName = block.getFieldValue("NAME");
 		const fieldType = block.getFieldValue("TYPE");
 
+		// Validate that the field name is provided
+		if (!fieldName) {
+			throw codegenError(block, "Field name is required");
+		}
+
 		return `${rustGenerator.INDENT}pub ${fieldName}: ${fieldType},\n`;
 	};
 
 	// Generator for instruction processing block
 	rustGenerator.forBlock["process_instruction"] = function (block: any) {
 		const funcName = block.getFieldValue("NAME");
+		
+		// Validate that the name is provided
+		if (!funcName) {
+			throw codegenError(block, "Function name is required");
+		}
+		
 		const params = rustGenerator.statementToCode(block, "PARAMS");
 		const body = rustGenerator.statementToCode(block, "BODY");
 
@@ -91,7 +108,6 @@ ${body}    Ok(())
 
 	// Generator for function parameter block
 	rustGenerator.forBlock["function_param"] = function (block: any) {
-		const paramName = block.getFieldValue("NAME");
 		const paramType = block.getFieldValue("TYPE");
 
 		return `${rustGenerator.INDENT}${paramType},\n`;
@@ -178,7 +194,7 @@ ${rustGenerator.INDENT}let (${pdaName}, ${pdaName}_bump) = Pubkey::find_program_
 		const enumName = block.getFieldValue("NAME");
 		const variants = rustGenerator.statementToCode(block, "VARIANTS");
 
-		const code = `#[derive(BorshSerialize, BorshDeserialize)]
+		const code = `#[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub enum ${enumName} {
 ${variants}}
 
@@ -190,20 +206,16 @@ ${variants}}
 	rustGenerator.forBlock["enum_variant"] = function (block: any) {
 		const variantName = block.getFieldValue("NAME");
 		const variantType = block.getFieldValue("TYPE");
-		const fields = rustGenerator.statementToCode(block, "FIELDS");
 
 		let code = "";
-		switch (variantType) {
-			case "SIMPLE":
-				code = `${rustGenerator.INDENT}${variantName},\n`;
-				break;
-			case "TUPLE":
-				code = `${rustGenerator.INDENT}${variantName}(${fields.trim()}),\n`;
-				break;
-			case "STRUCT":
-				code = `${rustGenerator.INDENT}${variantName} {\n${fields}${rustGenerator.INDENT}},\n`;
-				break;
+		if (variantType === "SIMPLE") {
+			code = `${rustGenerator.INDENT}${variantName},\n`;
+		} else if (variantType === "TUPLE") {
+			code = `${rustGenerator.INDENT}${variantName}(u64),\n`;
+		} else if (variantType === "STRUCT") {
+			code = `${rustGenerator.INDENT}${variantName} {\n${rustGenerator.INDENT}${rustGenerator.INDENT}value: u64,\n${rustGenerator.INDENT}},\n`;
 		}
+
 		return code;
 	};
 
@@ -335,5 +347,142 @@ ${rustGenerator.INDENT}}\n`;
 		}
 
 		return [`${a} ${operator} ${b}`, ORDER_ATOMIC];
+	};
+
+	// Generator for controls_if block
+	rustGenerator.forBlock["controls_if"] = function (block: any) {
+		// Count the number of elseif and else parts
+		let n = 0;
+		let code = "";
+		let branchCode, conditionCode;
+		
+		// Generate if/else if statements
+		do {
+			conditionCode = rustGenerator.valueToCode(block, "IF" + n, ORDER_NONE) || "false";
+			branchCode = rustGenerator.statementToCode(block, "DO" + n);
+			
+			// The first condition needs 'if', subsequent ones need 'else if'
+			code += (n === 0 ? `${rustGenerator.INDENT}if ${conditionCode} {\n` : 
+				`${rustGenerator.INDENT}} else if ${conditionCode} {\n`);
+			
+			code += branchCode;
+			n++;
+		} while (block.getInput("IF" + n));
+		
+		// Generate the else statement
+		if (block.getInput("ELSE")) {
+			branchCode = rustGenerator.statementToCode(block, "ELSE");
+			code += `${rustGenerator.INDENT}} else {\n${branchCode}`;
+		}
+		
+		// Close the final bracket
+		code += `${rustGenerator.INDENT}}\n`;
+		
+		return code;
+	};
+
+	// Generator for controls_for block
+	rustGenerator.forBlock["controls_for"] = function (block: any) {
+		const variable = block.getFieldValue("VAR");
+		const startValue = rustGenerator.valueToCode(block, "START", ORDER_NONE) || "0";
+		const endValue = rustGenerator.valueToCode(block, "END", ORDER_NONE) || "0";
+		const stepValue = rustGenerator.valueToCode(block, "STEP", ORDER_NONE) || "1";
+		const branch = rustGenerator.statementToCode(block, "DO");
+		
+		// Range in Rust uses exclusive upper bound, so we need to add 1 if step is positive
+		let rangeEnd = endValue;
+		if (Number(stepValue) > 0) {
+			// Try to detect if stepValue is a literal number
+			if (!isNaN(Number(endValue))) {
+				rangeEnd = (Number(endValue) + 1).toString();
+			} else {
+				rangeEnd = `${endValue} + 1`;
+			}
+		}
+
+		// Create the for loop with a range
+		const code = `${rustGenerator.INDENT}for ${variable} in (${startValue}..${rangeEnd}).step_by(${stepValue} as usize) {\n${branch}${rustGenerator.INDENT}}\n`;
+		return code;
+	};
+
+	// Generator for controls_while block
+	rustGenerator.forBlock["controls_while"] = function (block: any) {
+		const condition = rustGenerator.valueToCode(block, "BOOL", ORDER_NONE) || "false";
+		const branch = rustGenerator.statementToCode(block, "DO");
+		
+		const code = `${rustGenerator.INDENT}while ${condition} {\n${branch}${rustGenerator.INDENT}}\n`;
+		return code;
+	};
+
+	// Generator for logic_boolean block
+	rustGenerator.forBlock["logic_boolean"] = function (block: any) {
+		const value = block.getFieldValue("BOOL");
+		return [value.toLowerCase(), ORDER_ATOMIC];
+	};
+
+	// Generator for logic_compare block
+	rustGenerator.forBlock["logic_compare"] = function (block: any) {
+		const operators: {[key: string]: string} = {
+			'EQ': '==',
+			'NEQ': '!=',
+			'LT': '<',
+			'LTE': '<=',
+			'GT': '>',
+			'GTE': '>='
+		};
+		
+		const operator = operators[block.getFieldValue('OP')];
+		const valueA = rustGenerator.valueToCode(block, 'A', ORDER_RELATIONAL) || '0';
+		const valueB = rustGenerator.valueToCode(block, 'B', ORDER_RELATIONAL) || '0';
+		
+		const code = `${valueA} ${operator} ${valueB}`;
+		return [code, ORDER_RELATIONAL];
+	};
+
+	// Generator for logic_operation block (AND, OR)
+	rustGenerator.forBlock["logic_operation"] = function (block: any) {
+		const operators: {[key: string]: string} = {
+			'AND': '&&',
+			'OR': '||'
+		};
+		
+		const operator = operators[block.getFieldValue('OP')];
+		const valueA = rustGenerator.valueToCode(block, 'A', ORDER_AND) || 'false';
+		const valueB = rustGenerator.valueToCode(block, 'B', ORDER_AND) || 'false';
+		
+		const code = `${valueA} ${operator} ${valueB}`;
+		const order = operator === '&&' ? ORDER_AND : ORDER_OR;
+		return [code, order];
+	};
+
+	// Generator for logic_negate block (NOT)
+	rustGenerator.forBlock["logic_negate"] = function (block: any) {
+		const value = rustGenerator.valueToCode(block, 'BOOL', ORDER_HIGH) || 'false';
+		const code = `!${value}`;
+		return [code, ORDER_HIGH];
+	};
+	
+	// Generator for text block
+	rustGenerator.forBlock["text"] = function (block: any) {
+		const text = block.getFieldValue('TEXT');
+		const code = `"${text.replace(/"/g, '\\"')}"`;
+		return [code, ORDER_ATOMIC];
+	};
+
+	// Generator for math_number block
+	rustGenerator.forBlock["math_number"] = function (block: any) {
+		const number = Number(block.getFieldValue('NUM'));
+		return [String(number), ORDER_ATOMIC];
+	};
+}
+
+// Function to report code generation errors with more context
+export function codegenError(block: any, message: string) {
+	const id = block?.id || "unknown";
+	return {
+		message: message,
+		blockId: id,
+		block: block,
+		toString: function() { return `Code generation error at block #${id}: ${message}`; }
 	};
 }
