@@ -65,152 +65,52 @@ Next steps:
 			}
 	};
 
-	// Use the built-in if block with modifications
-	Blockly.Blocks["controls_if"] = {
+	// Custom if block to avoid mutator conflicts
+	Blockly.Blocks["solana_if"] = {
 		init: function() {
-			this.setColour(210);
-			this.appendValueInput('IF0')
-				.setCheck('Boolean')
-				.appendField('if');
-			this.appendStatementInput('DO0')
-				.appendField('do');
-			this.setHelpUrl("https://docs.rs/solana-program/latest/solana_program/");
+			this.appendValueInput("IF0")
+				.setCheck("Boolean")
+				.appendField("if");
+			this.appendStatementInput("DO0")
+				.appendField("do");
 			this.setPreviousStatement(true);
 			this.setNextStatement(true);
-			this.elseifCount_ = 0;
-			this.elseCount_ = 0;
-			this.updateShape_();
+			this.setColour(210);
+			this.setTooltip("Control statement for conditional execution");
+			this.setHelpUrl("https://docs.rs/solana-program/latest/solana_program/");
+			
+			// Add else button
+			this.appendDummyInput("ELSE_BUTTON")
+				.appendField(new Blockly.FieldImage(
+					"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 2h8v8h-8z' fill='%23fff'/%3E%3C/svg%3E",
+					12,
+					12,
+					"Add else",
+					() => this.addElse_()
+				));
 		},
 
-		mutationToDom: function() {
-			if (!this.elseifCount_ && !this.elseCount_) {
-				return null;
-			}
-			const container = document.createElement('mutation');
-			if (this.elseifCount_) {
-				container.setAttribute('elseif', String(this.elseifCount_));
-			}
-			if (this.elseCount_) {
-				container.setAttribute('else', '1');
-			}
-			return container;
-		},
-
-		domToMutation: function(xmlElement) {
-			this.elseifCount_ = parseInt(xmlElement.getAttribute('elseif') || '0', 10);
-			this.elseCount_ = parseInt(xmlElement.getAttribute('else') || '0', 10);
-			this.updateShape_();
-		},
-
-		updateShape_: function() {
-			// Delete everything after the first input.
-			let i = 1;
-			while (this.getInput('IF' + i)) {
-				this.removeInput('IF' + i);
-				this.removeInput('DO' + i);
-				i++;
-			}
-			if (this.getInput('ELSE')) {
-				this.removeInput('ELSE');
-			}
-			// Rebuild block.
-			for (let i = 1; i <= this.elseifCount_; i++) {
-				this.appendValueInput('IF' + i)
-					.setCheck('Boolean')
-					.appendField('else if');
-				this.appendStatementInput('DO' + i);
-			}
-			if (this.elseCount_) {
+		addElse_: function() {
+			if (!this.getInput('ELSE')) {
 				this.appendStatementInput('ELSE')
 					.appendField('else');
-			}
-		},
-
-		compose: function(containerBlock) {
-			// Count number of 'else if' and 'else' inputs.
-			let clauseBlock = containerBlock.nextConnection?.targetBlock();
-			this.elseifCount_ = 0;
-			this.elseCount_ = 0;
-			const valueConnections = [null];
-			const statementConnections = [null];
-			let elseStatementConnection = null;
-			
-			while (clauseBlock) {
-				if (!clauseBlock.isInsertionMarker()) {
-					switch (clauseBlock.type) {
-						case 'controls_if_elseif':
-							this.elseifCount_++;
-							valueConnections.push(clauseBlock.valueConnection_);
-							statementConnections.push(clauseBlock.statementConnection_);
-							break;
-						case 'controls_if_else':
-							this.elseCount_++;
-							elseStatementConnection = clauseBlock.statementConnection_;
-							break;
-						default:
-							throw Error('Unknown block type: ' + clauseBlock.type);
-					}
-				}
-				clauseBlock = clauseBlock.nextConnection?.targetBlock() || null;
-			}
-			
-			this.updateShape_();
-			// Reconnect any child blocks.
-			this.reconnectChildBlocks_(valueConnections, statementConnections,
-				elseStatementConnection);
-		},
-
-		reconnectChildBlocks_: function(valueConnections, statementConnections,
-			elseStatementConnection) {
-			// Reconnect any child blocks.
-			for (let i = 1; i <= this.elseifCount_; i++) {
-				const ifInput = this.getInput('IF' + i);
-				const doInput = this.getInput('DO' + i);
-				if (valueConnections[i] && ifInput?.connection) {
-					ifInput.connection.connect(valueConnections[i]);
-				}
-				if (statementConnections[i] && doInput?.connection) {
-					doInput.connection.connect(statementConnections[i]);
-				}
-			}
-			const elseInput = this.getInput('ELSE');
-			if (elseStatementConnection && elseInput?.connection) {
-				elseInput.connection.connect(elseStatementConnection);
+				this.moveInputBefore('ELSE_BUTTON', null);
 			}
 		}
 	};
 
-	// Helper blocks for if mutator
-	Blockly.Blocks["controls_if_if"] = {
-		init: function() {
-			this.appendDummyInput().appendField("if");
-			this.setNextStatement(true);
-			this.setColour(210);
-			this.setTooltip("If block container for mutator");
-			this.contextMenu = false;
+	// Update the toolbox to use our custom if block
+	const controlCategory = initialToolbox.contents.find(
+		(category: any) => category.name === "Control"
+	);
+	if (controlCategory && controlCategory.contents) {
+		const ifBlockIndex = controlCategory.contents.findIndex(
+			(block: any) => block.type === "controls_if"
+		);
+		if (ifBlockIndex !== -1) {
+			controlCategory.contents[ifBlockIndex].type = "solana_if";
 		}
-	};
-
-	Blockly.Blocks["controls_if_elseif"] = {
-		init: function() {
-			this.appendDummyInput().appendField("else if");
-			this.setPreviousStatement(true);
-			this.setNextStatement(true);
-			this.setColour(210);
-			this.setTooltip("Else-if condition for if block");
-			this.contextMenu = false;
-		}
-	};
-
-	Blockly.Blocks["controls_if_else"] = {
-		init: function() {
-			this.appendDummyInput().appendField("else");
-			this.setPreviousStatement(true);
-			this.setColour(210);
-			this.setTooltip("Else condition for if block");
-			this.contextMenu = false;
-		}
-	};
+	}
 
 	// For loop control block
 	Blockly.Blocks["controls_for"] = {
@@ -1163,7 +1063,7 @@ export const initialToolbox = {
 			contents: [
 				{
 					kind: "block",
-					type: "controls_if",
+					type: "solana_if",
 				},
 				{
 					kind: "block",
