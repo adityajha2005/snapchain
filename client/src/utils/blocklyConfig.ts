@@ -1,6 +1,19 @@
 "use client";
 
 import * as Blockly from "blockly";
+import type { Block, Workspace, Connection } from "blockly";
+import "blockly/blocks";
+
+interface CustomBlock extends Block {
+	elseifCount_: number;
+	elseCount_: number;
+	rebuildShape_: () => void;
+}
+
+interface MutatorBlock extends Block {
+	valueConnection_: Connection | null;
+	statementConnection_: Connection | null;
+}
 
 // Custom block definitions for Rust and Solana
 export const defineCustomBlocks = () => {
@@ -9,7 +22,7 @@ export const defineCustomBlocks = () => {
 
 	// Program Definition block
 	Blockly.Blocks["solana_program"] = {
-		init: function () {
+		init: function (this: Block) {
 			this.appendDummyInput()
 				.appendField("Solana Program")
 				.appendField(new Blockly.FieldTextInput("my_program"), "NAME");
@@ -29,7 +42,7 @@ Next steps:
 3. Add Error Handling block`);
 			this.setHelpUrl("https://docs.solana.com/developing/programming-model/overview");
 		},
-		onchange: function() {
+		onchange: function(this: Block) {
 				// Check program name
 				const programName = this.getFieldValue("NAME");
 				if (!programName || programName === "") {
@@ -42,209 +55,139 @@ Next steps:
 			}
 	};
 
-	// If control block (including else/elseif)
+	// Use the built-in if block with modifications
+	const originalIfBlock = Blockly.Blocks["controls_if"];
 	Blockly.Blocks["controls_if"] = {
-		init: function () {
-			this.appendValueInput("IF0")
-				.setCheck("Boolean")
-				.appendField("if");
-			this.appendStatementInput("DO0")
-				.appendField("do");
-			this.setPreviousStatement(true, null);
-			this.setNextStatement(true, null);
+		...originalIfBlock,
+		init: function(this: Block) {
+			originalIfBlock.init.call(this);
 			this.setColour(210);
 			this.setHelpUrl("https://docs.rs/solana-program/latest/solana_program/");
-			
-			// Add mutator for adding else/elseif
-			this.setMutator(new Blockly.Mutator(['controls_if_elseif', 'controls_if_else']));
-			
-			// Initialize internal state
-			this.elseifCount_ = 0;
-			this.elseCount_ = 0;
-		},
-		
-		mutationToDom: function() {
-			// Save mutation state
+		}
+	};
+
+	// Register the mutator extension
+	Blockly.Extensions.registerMutator('controls_if_mutator', {
+		mutationToDom: function(this: CustomBlock) {
 			if (!this.elseifCount_ && !this.elseCount_) {
 				return null;
 			}
 			const container = document.createElement('mutation');
 			if (this.elseifCount_) {
-				container.setAttribute('elseif', this.elseifCount_);
+				container.setAttribute('elseif', this.elseifCount_.toString());
 			}
 			if (this.elseCount_) {
-				container.setAttribute('else', 1);
+				container.setAttribute('else', '1');
 			}
 			return container;
 		},
 		
-		domToMutation: function(xmlElement) {
-			// Restore mutation state
+		domToMutation: function(this: CustomBlock, xmlElement: Element) {
 			this.elseifCount_ = parseInt(xmlElement.getAttribute('elseif') || '0', 10);
 			this.elseCount_ = parseInt(xmlElement.getAttribute('else') || '0', 10);
 			this.rebuildShape_();
 		},
 		
-		decompose: function(workspace) {
-			// Define mutator UI
+		decompose: function(this: CustomBlock, workspace: Workspace) {
 			const containerBlock = workspace.newBlock('controls_if_if');
-			containerBlock.initSvg();
+			(containerBlock as any).render();
 			let connection = containerBlock.nextConnection;
 			for (let i = 1; i <= this.elseifCount_; i++) {
 				const elseifBlock = workspace.newBlock('controls_if_elseif');
-				elseifBlock.initSvg();
-				connection.connect(elseifBlock.previousConnection);
+				(elseifBlock as any).render();
+				if (connection && elseifBlock.previousConnection) {
+					connection.connect(elseifBlock.previousConnection);
+				}
 				connection = elseifBlock.nextConnection;
 			}
 			if (this.elseCount_) {
 				const elseBlock = workspace.newBlock('controls_if_else');
-				elseBlock.initSvg();
-				connection.connect(elseBlock.previousConnection);
+				(elseBlock as any).render();
+				if (connection && elseBlock.previousConnection) {
+					connection.connect(elseBlock.previousConnection);
+				}
 			}
 			return containerBlock;
 		},
 		
-		compose: function(containerBlock) {
-			// Recreate block from mutator
-			let clauseBlock = containerBlock.nextConnection.targetBlock();
-			// Count number of inputs.
+		compose: function(this: CustomBlock, containerBlock: Block) {
+			let clauseBlock = containerBlock.nextConnection?.targetBlock();
 			this.elseifCount_ = 0;
 			this.elseCount_ = 0;
-			const valueConnections = [null];
-			const statementConnections = [null];
-			let elseStatementConnection = null;
-			while (clauseBlock) {
+			const valueConnections: (Connection | null)[] = [null];
+			const statementConnections: (Connection | null)[] = [null];
+			let elseStatementConnection: Connection | null = null;
+			
+			while (clauseBlock && !clauseBlock.isInsertionMarker()) {
+				const mutatorBlock = clauseBlock as MutatorBlock;
 				switch (clauseBlock.type) {
 					case 'controls_if_elseif':
 						this.elseifCount_++;
-						valueConnections.push(clauseBlock.valueConnection_);
-						statementConnections.push(clauseBlock.statementConnection_);
+						valueConnections.push(mutatorBlock.valueConnection_);
+						statementConnections.push(mutatorBlock.statementConnection_);
 						break;
 					case 'controls_if_else':
 						this.elseCount_++;
-						elseStatementConnection = clauseBlock.statementConnection_;
+						elseStatementConnection = mutatorBlock.statementConnection_;
 						break;
 					default:
 						throw new Error('Unknown block type: ' + clauseBlock.type);
 				}
-				clauseBlock = clauseBlock.nextConnection &&
-					clauseBlock.nextConnection.targetBlock();
+				clauseBlock = clauseBlock.nextConnection?.targetBlock() || null;
 			}
-			this.rebuildShape_();
 			
-			// Reconnect all inputs
+			this.rebuildShape_();
 			for (let i = 1; i <= this.elseifCount_; i++) {
-				Blockly.Mutator.reconnect(valueConnections[i], this, 'IF' + i);
-				Blockly.Mutator.reconnect(statementConnections[i], this, 'DO' + i);
+				const ifInput = this.getInput('IF' + i);
+				const doInput = this.getInput('DO' + i);
+				if (valueConnections[i] && ifInput?.connection) {
+					ifInput.connection.connect(valueConnections[i]);
+				}
+				if (statementConnections[i] && doInput?.connection) {
+					doInput.connection.connect(statementConnections[i]);
+				}
 			}
-			Blockly.Mutator.reconnect(elseStatementConnection, this, 'ELSE');
+			const elseInput = this.getInput('ELSE');
+			if (elseStatementConnection && elseInput?.connection) {
+				elseInput.connection.connect(elseStatementConnection);
+			}
 		},
 		
-		saveConnections: function(containerBlock) {
-			// Store connection info for mutator
-			let clauseBlock = containerBlock.nextConnection.targetBlock();
+		saveConnections: function(this: CustomBlock, containerBlock: Block) {
+			let clauseBlock = containerBlock.nextConnection?.targetBlock();
 			let i = 1;
 			while (clauseBlock) {
+				if (clauseBlock.isInsertionMarker()) {
+					clauseBlock = clauseBlock.nextConnection?.targetBlock() || null;
+					continue;
+				}
+				const mutatorBlock = clauseBlock as MutatorBlock;
 				switch (clauseBlock.type) {
-					case 'controls_if_elseif':
+					case 'controls_if_elseif': {
 						const inputIf = this.getInput('IF' + i);
 						const inputDo = this.getInput('DO' + i);
-						clauseBlock.valueConnection_ =
-							inputIf && inputIf.connection.targetConnection;
-						clauseBlock.statementConnection_ =
-							inputDo && inputDo.connection.targetConnection;
+						mutatorBlock.valueConnection_ = 
+							inputIf?.connection?.targetConnection || null;
+						mutatorBlock.statementConnection_ = 
+							inputDo?.connection?.targetConnection || null;
 						i++;
 						break;
-					case 'controls_if_else':
-						const inputElse = this.getInput('ELSE');
-						clauseBlock.statementConnection_ =
-							inputElse && inputElse.connection.targetConnection;
+					}
+					case 'controls_if_else': {
+						const inputDo = this.getInput('ELSE');
+						mutatorBlock.statementConnection_ = 
+							inputDo?.connection?.targetConnection || null;
 						break;
+					}
 					default:
 						throw new Error('Unknown block type: ' + clauseBlock.type);
 				}
-				clauseBlock = clauseBlock.nextConnection &&
-					clauseBlock.nextConnection.targetBlock();
-			}
-		},
-		
-		rebuildShape_: function() {
-			// Rebuild the block with new inputs
-			const valueConnections = [null];
-			const statementConnections = [null];
-			let elseStatementConnection = null;
-			
-			if (this.getInput('ELSE')) {
-				elseStatementConnection = this.getInput('ELSE').connection.targetConnection;
-			}
-			
-			for (let i = 1; i <= this.elseifCount_; i++) {
-				const inputIf = this.getInput('IF' + i);
-				const inputDo = this.getInput('DO' + i);
-				if (inputIf) {
-					valueConnections.push(inputIf.connection.targetConnection);
-				}
-				if (inputDo) {
-					statementConnections.push(inputDo.connection.targetConnection);
-				}
-			}
-			
-			// Delete everything
-			if (this.getInput('ELSE')) {
-				this.removeInput('ELSE');
-			}
-			for (let i = 1; i <= this.elseifCount_; i++) {
-				this.removeInput('IF' + i);
-				this.removeInput('DO' + i);
-			}
-			
-			// Rebuild
-			for (let i = 1; i <= this.elseifCount_; i++) {
-				this.appendValueInput('IF' + i)
-					.setCheck('Boolean')
-					.appendField("else if");
-				this.appendStatementInput('DO' + i);
-			}
-			if (this.elseCount_) {
-				this.appendStatementInput('ELSE')
-					.appendField('else');
-			}
-			
-			// Reconnect
-			for (let i = 1; i <= this.elseifCount_; i++) {
-				Blockly.Mutator.reconnect(valueConnections[i], this, 'IF' + i);
-				Blockly.Mutator.reconnect(statementConnections[i], this, 'DO' + i);
-			}
-			Blockly.Mutator.reconnect(elseStatementConnection, this, 'ELSE');
-		},
-		
-		onchange: function() {
-			// Validate all conditions
-			const hasEmptyInput = (input) => {
-				return !input.connection.targetBlock();
-			};
-			
-			let warnings = [];
-			
-			// Check IF0 condition
-			if (hasEmptyInput(this.getInput('IF0'))) {
-				warnings.push("Main IF condition is missing");
-			}
-			
-			// Check else-if conditions
-			for (let i = 1; i <= this.elseifCount_; i++) {
-				if (hasEmptyInput(this.getInput('IF' + i))) {
-					warnings.push(`ELSE IF ${i} condition is missing`);
-				}
-			}
-			
-			if (warnings.length > 0) {
-				this.setWarningText(warnings.join('\n'));
-			} else {
-				this.setWarningText(null);
+				clauseBlock = clauseBlock.nextConnection?.targetBlock() || null;
 			}
 		}
-	};
+	}, function() {
+		return ['controls_if_elseif', 'controls_if_else'];
+	});
 
 	// For loop control block
 	Blockly.Blocks["controls_for"] = {
@@ -283,7 +226,7 @@ Next steps:
 			}
 			
 			// Validate numerical inputs
-			const validateInput = (inputName, errorMsg) => {
+			const validateInput = (inputName: string, errorMsg: string) => {
 				const input = this.getInput(inputName);
 				if (!input.connection.targetBlock()) {
 					return errorMsg;
@@ -1404,8 +1347,8 @@ export const initialToolbox = {
 };
 
 // Helper function to check if a block is nested within a specific parent type
-export function isBlockInParent(block, parentType) {
-	let parent = block.getSurroundParent();
+export function isBlockInParent(block: Block | null, parentType: string) {
+	let parent = block?.getSurroundParent();
 	while (parent) {
 		if (parent.type === parentType) {
 			return true;
@@ -1416,8 +1359,8 @@ export function isBlockInParent(block, parentType) {
 }
 
 // Error handling helper for codegen
-export function codegenError(block, message) {
-	const id = block.id;
+export function codegenError(block: Block | null, message: string) {
+	const id = block?.id;
 	throw {
 		message: message,
 		blockId: id,
@@ -1425,3 +1368,4 @@ export function codegenError(block, message) {
 		toString: function() { return `Code generation error at block #${id}: ${message}`; }
 	};
 }
+

@@ -26,7 +26,7 @@ async function processGenerationQueue() {
 			const chunk = generationQueue.splice(0, CHUNK_SIZE);
 			for (const block of chunk) {
 				if (block && rustGenerator.forBlock[block.type]) {
-					const blockCode = rustGenerator.forBlock[block.type](block);
+					const blockCode = rustGenerator.forBlock[block.type](block, rustGenerator);
 					code += blockCode;
 				}
 			}
@@ -42,6 +42,7 @@ async function processGenerationQueue() {
 
 // Override the workspaceToCode method
 const originalWorkspaceToCode = rustGenerator.workspaceToCode;
+
 rustGenerator.workspaceToCode = function(workspace: Blockly.Workspace | undefined): Promise<string> {
 	if (!workspace) return Promise.resolve('');
 
