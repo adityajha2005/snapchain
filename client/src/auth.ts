@@ -1,14 +1,29 @@
-import { NextAuthOptions } from "next-auth";
+import { NextAuthOptions, DefaultSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GithubProvider from "next-auth/providers/github";
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
+import type { Adapter } from "next-auth/adapters";
 import clientPromise from "./lib/mongodb";
 import dbConnect from "./lib/dbConnect";
-import User from "./lib/models/User";
+import User, { IUser } from "./lib/models/User";
 import { redirect } from "next/navigation";
+import { Types } from 'mongoose';
+
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id: string;
+      username: string;
+    } & DefaultSession["user"]
+  }
+
+  interface User {
+    username: string;
+  }
+}
 
 export const authOptions: NextAuthOptions = {
-  adapter: MongoDBAdapter(clientPromise),
+  adapter: MongoDBAdapter(clientPromise) as Adapter,
   providers: [
     GithubProvider({
       clientId: process.env.GITHUB_ID as string,
@@ -27,20 +42,25 @@ export const authOptions: NextAuthOptions = {
         
         await dbConnect();
         
-        const user = await User.findOne({ email: credentials.email });
-        
-        if (!user) {
+        // Get the user document for password comparison
+        const userDoc = await User.findOne({ email: credentials.email }) as IUser;
+        if (!userDoc) {
           return null;
         }
         
-        const isPasswordValid = await user.comparePassword(credentials.password);
-        
+        const isPasswordValid = await userDoc.comparePassword(credentials.password);
         if (!isPasswordValid) {
           return null;
         }
         
+        // Get a plain object for auth
+        const user = await User.findOne({ email: credentials.email }).lean();
+        if (!user?._id) {
+          return null;
+        }
+
         return {
-          id: user._id.toString(),
+          id: (user._id as unknown as Types.ObjectId).toString(),
           email: user.email,
           username: user.username,
           github: user.github,
@@ -61,14 +81,12 @@ export const authOptions: NextAuthOptions = {
     },
     async jwt({ token, user }) {
       if (user) {
-        token.username = user.username;
+        token.username = (user as unknown as { username: string }).username;
       }
       return token;
     },
     async redirect({ url, baseUrl }) {
-      // If the url is an absolute URL that starts with the base URL
       if (url.startsWith(baseUrl)) {
-        // If it's any auth related URL, redirect to smart-contracts after auth
         if (
           url.includes('/api/auth/signin') || 
           url.includes('/api/auth/callback') ||
@@ -76,22 +94,18 @@ export const authOptions: NextAuthOptions = {
         ) {
           return `${baseUrl}/smart-contracts`;
         }
-        // If it's already a valid internal URL, don't modify it
         return url;
       }
       
-      // If it's an absolute URL to an external site, allow it
       if (url.startsWith('http://') || url.startsWith('https://')) {
         return url;
       }
       
-      // Default redirect to the base URL
       return baseUrl;
     }
   },
   pages: {
     signIn: "/auth/signin",
-    signUp: "/auth/signup",
     error: "/auth/error",
   },
 };
