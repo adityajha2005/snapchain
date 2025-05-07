@@ -17,8 +17,18 @@ interface MutatorBlock extends Block {
 
 // Custom block definitions for Rust and Solana
 export const defineCustomBlocks = () => {
-	// Only run in browser environment
+	// Only run in browser environment and ensure initialization happens once
 	if (typeof window === "undefined") return;
+	
+	// Guard against multiple initializations
+	if ((window as any).__BLOCKLY_CUSTOM_BLOCKS_INITIALIZED__) return;
+	(window as any).__BLOCKLY_CUSTOM_BLOCKS_INITIALIZED__ = true;
+
+	// Ensure Blockly is loaded
+	if (!Blockly || !Blockly.Blocks) {
+		console.error('Blockly is not properly loaded');
+		return;
+	}
 
 	// Program Definition block
 	Blockly.Blocks["solana_program"] = {
