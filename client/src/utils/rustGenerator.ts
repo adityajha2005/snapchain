@@ -42,15 +42,14 @@ async function processGenerationQueue() {
 
 // Override the workspaceToCode method
 const originalWorkspaceToCode = rustGenerator.workspaceToCode;
-
-rustGenerator.workspaceToCode = function(workspace: Blockly.Workspace | undefined): Promise<string> {
+rustGenerator.workspaceToCode = (function (
+	workspace: Blockly.Workspace | undefined
+): Promise<string> {
 	if (!workspace) return Promise.resolve('');
 
-	// Get all blocks in the workspace
 	const blocks = workspace.getTopBlocks(true);
 	let allBlocks: any[] = [];
-	
-	// Collect all blocks including nested ones
+
 	blocks.forEach(block => {
 		allBlocks.push(block);
 		let child = block.getChildren(true);
@@ -63,11 +62,9 @@ rustGenerator.workspaceToCode = function(workspace: Blockly.Workspace | undefine
 			child = nextChild;
 		}
 	});
-	
-	// Clear previous queue and add new blocks
+
 	generationQueue = allBlocks;
-	
-	// Process the queue
+
 	return processGenerationQueue()
 		.then(generatedCode => {
 			if (!generatedCode) {
@@ -79,7 +76,8 @@ rustGenerator.workspaceToCode = function(workspace: Blockly.Workspace | undefine
 			console.error('Error in code generation:', err);
 			return originalWorkspaceToCode.call(rustGenerator, workspace);
 		});
-};
+} as unknown) as typeof rustGenerator.workspaceToCode;
+
 
 // Define custom order constants for expressions
 const ORDER_NONE = 99;
