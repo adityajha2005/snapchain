@@ -45,6 +45,14 @@ try {
       type: Date,
       default: Date.now,
     },
+    blockId: {
+      type: String,
+      required: false,
+    },
+    id:{
+      type: String,
+      required: false,
+    }
   });
   
   Message = mongoose.model('Message', messageSchema);

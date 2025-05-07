@@ -19,19 +19,21 @@ const ProjectPage = () => {
 	};
 
 	return (
-		<div className="flex flex-col h-screen bg-zinc-950 text-zinc-50">
-			<div className="flex-grow flex flex-col lg:flex-row overflow-hidden">
+		<div className="flex flex-col h-screen bg-[#f8f9fc]">
+			<div className="flex-grow flex flex-col lg:flex-row overflow-hidden p-4 gap-4">
 				{/* Blockly Workspace */}
-				<div className="w-full lg:w-1/2 h-1/2 lg:h-full border-r border-zinc-800 overflow-hidden">
+				<div className="w-full lg:w-3/5 h-1/2 lg:h-full bg-white rounded-lg shadow-sm border border-gray-200">
 					<BlocklyWorkspace onCodeChange={handleCodeChange} />
 				</div>
-				<div className="w-full lg:w-1/2 h-1/2 lg:h-full flex flex-col">
+				
+				{/* Right Panel */}
+				<div className="w-full lg:w-2/5 h-1/2 lg:h-full flex flex-col gap-4">
 					{/* Code Panel */}
-					<div className="h-1/2 border-b border-zinc-800 p-4">
+					<div className="h-1/2 bg-white rounded-lg shadow-sm border border-gray-200">
 						<CodePanel code={generatedCode} />
 					</div>
 					{/* Smart Contract Chat Assistant */}
-					<div className="h-1/2 overflow-hidden">
+					<div className="h-1/2 bg-white rounded-lg shadow-sm border border-gray-200">
 						<SmartContractChat 
 							currentCode={generatedCode} 
 							onUpdateCode={handleCodeUpdateFromChat}

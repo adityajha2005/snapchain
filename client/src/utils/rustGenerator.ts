@@ -9,6 +9,77 @@ export const rustGenerator = new Blockly.Generator("Rust");
 // Define basic generator properties
 rustGenerator.INDENT = "    ";
 
+// Add generation queue management
+let generationQueue: any[] = [];
+const CHUNK_SIZE = 25;
+let isProcessingQueue = false;
+
+// Process blocks in chunks
+async function processGenerationQueue() {
+	if (isProcessingQueue || generationQueue.length === 0) return;
+	
+	isProcessingQueue = true;
+	let code = '';
+	
+	try {
+		while (generationQueue.length > 0) {
+			const chunk = generationQueue.splice(0, CHUNK_SIZE);
+			for (const block of chunk) {
+				if (block && rustGenerator.forBlock[block.type]) {
+					const blockCode = rustGenerator.forBlock[block.type](block);
+					code += blockCode;
+				}
+			}
+			// Small delay between chunks to prevent blocking
+			await new Promise(resolve => setTimeout(resolve, 10));
+		}
+	} finally {
+		isProcessingQueue = false;
+	}
+	
+	return code;
+}
+
+// Override the workspaceToCode method
+const originalWorkspaceToCode = rustGenerator.workspaceToCode;
+rustGenerator.workspaceToCode = function(workspace: Blockly.Workspace | undefined): Promise<string> {
+	if (!workspace) return Promise.resolve('');
+
+	// Get all blocks in the workspace
+	const blocks = workspace.getTopBlocks(true);
+	let allBlocks: any[] = [];
+	
+	// Collect all blocks including nested ones
+	blocks.forEach(block => {
+		allBlocks.push(block);
+		let child = block.getChildren(true);
+		while (child.length > 0) {
+			const nextChild: any[] = [];
+			child.forEach((b: any) => {
+				allBlocks.push(b);
+				nextChild.push(...b.getChildren(true));
+			});
+			child = nextChild;
+		}
+	});
+	
+	// Clear previous queue and add new blocks
+	generationQueue = allBlocks;
+	
+	// Process the queue
+	return processGenerationQueue()
+		.then(generatedCode => {
+			if (!generatedCode) {
+				return originalWorkspaceToCode.call(rustGenerator, workspace);
+			}
+			return generatedCode;
+		})
+		.catch(err => {
+			console.error('Error in code generation:', err);
+			return originalWorkspaceToCode.call(rustGenerator, workspace);
+		});
+};
+
 // Define custom order constants for expressions
 const ORDER_NONE = 99;
 const ORDER_ATOMIC = 0;
@@ -56,7 +127,6 @@ ${programBody}
 	// Generator for Rust struct block
 	rustGenerator.forBlock["rust_struct"] = function (block: any) {
 		const structName = block.getFieldValue("NAME");
-		
 		// Validate that the name is provided
 		if (!structName) {
 			throw codegenError(block, "Struct name is required");
@@ -76,8 +146,6 @@ ${fields}}
 	rustGenerator.forBlock["struct_field"] = function (block: any) {
 		const fieldName = block.getFieldValue("NAME");
 		const fieldType = block.getFieldValue("TYPE");
-
-		// Validate that the field name is provided
 		if (!fieldName) {
 			throw codegenError(block, "Field name is required");
 		}

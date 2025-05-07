@@ -15,10 +15,19 @@ export const defineCustomBlocks = () => {
 				.appendField(new Blockly.FieldTextInput("my_program"), "NAME");
 			this.appendStatementInput("BODY").setCheck(null);
 			this.setColour(230);
-			this.setTooltip("Define a Solana program");
-			this.setHelpUrl(
-				"https://docs.solana.com/developing/programming-model/overview",
-			);
+			this.setTooltip(`Creates a new Solana program with basic setup.
+			
+Tips:
+• Start with defining program instructions
+• Add account validation
+• Consider adding error handling
+• Don't forget to implement security checks
+
+Next steps:
+1. Add Process Instruction block
+2. Add Account Validation block
+3. Add Error Handling block`);
+			this.setHelpUrl("https://docs.solana.com/developing/programming-model/overview");
 		},
 		onchange: function() {
 				// Check program name
@@ -418,7 +427,19 @@ export const defineCustomBlocks = () => {
 			this.setPreviousStatement(true, null);
 			this.setNextStatement(true, null);
 			this.setColour(290);
-			this.setTooltip("Define a function to process an instruction");
+			this.setTooltip(`Defines how your program processes incoming instructions.
+			
+Tips:
+• Always validate input parameters
+• Check account permissions
+• Handle all possible error cases
+• Consider adding logging
+
+Next steps:
+1. Add Account Validation blocks
+2. Add PDA Creation if needed
+3. Add Token Operations if handling tokens
+4. Add Error blocks for validation`);
 			this.setHelpUrl("");
 		},
 		onchange: function() {
@@ -491,7 +512,19 @@ export const defineCustomBlocks = () => {
 			this.setPreviousStatement(true, null);
 			this.setNextStatement(true, null);
 			this.setColour(0);
-			this.setTooltip("Validate the number of accounts");
+			this.setTooltip(`Validates the number and type of accounts passed to the program.
+			
+Tips:
+• Always check account owners
+• Verify account permissions (signer/writable)
+• Validate account data structure
+• Check for required accounts
+
+Next steps:
+1. Add Account Owner Check block
+2. Add Account Constraint block
+3. Add Deserialize Account block
+4. Add Error blocks for invalid cases`);
 			this.setHelpUrl("");
 		},
 		onchange: function() {
@@ -616,7 +649,19 @@ export const defineCustomBlocks = () => {
 			this.setPreviousStatement(true, null);
 			this.setNextStatement(true, null);
 			this.setColour(60);
-			this.setTooltip("Create a Program Derived Address (PDA)");
+			this.setTooltip(`Creates a Program Derived Address (PDA) for storing program data.
+			
+Tips:
+• Use unique seed combinations
+• Include program ID in seeds
+• Consider adding a bump seed
+• Validate PDA ownership
+
+Next steps:
+1. Add PDA Seeds
+2. Add Account Initialization
+3. Add Owner Validation
+4. Add Data Serialization`);
 			this.setHelpUrl("");
 		},
 		onchange: function() {
@@ -883,7 +928,19 @@ export const defineCustomBlocks = () => {
 			this.setPreviousStatement(true, null);
 			this.setNextStatement(true, null);
 			this.setColour(180);
-			this.setTooltip("Perform a token operation");
+			this.setTooltip(`Performs SPL Token operations safely.
+			
+Tips:
+• Always validate token accounts
+• Check token mint authority
+• Verify sufficient token balance
+• Handle decimal precision correctly
+
+Next steps:
+1. Add Account Validation for token accounts
+2. Add Authority Check block
+3. Add Balance Check block
+4. Add Error Handling for token operations`);
 			this.setHelpUrl("");
 		},
 		onchange: function() {
@@ -921,7 +978,19 @@ export const defineCustomBlocks = () => {
 			this.setPreviousStatement(true, null);
 			this.setNextStatement(true, null);
 			this.setColour(0);
-			this.setTooltip("Add a constraint check for an account");
+			this.setTooltip(`Adds security constraints to account validation.
+			
+Tips:
+• Always check signer authority
+• Verify account writability
+• Check account initialization
+• Validate fund sufficiency
+
+Next steps:
+1. Add Multiple Constraints
+2. Add Custom Error Handling
+3. Add Ownership Validation
+4. Add Balance Checks`);
 			this.setHelpUrl("");
 		},
 		onchange: function() {
