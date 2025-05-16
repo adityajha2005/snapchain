@@ -15,12 +15,12 @@ const Navbar = () => {
 			<div className="hidden sm:flex items-center opacity-50 gap-2 flex-1 border-x border-border h-14 w-full bg-[repeating-linear-gradient(-45deg,var(--color-border),var(--color-border)_1px,transparent_1px,transparent_5px)] mx-2"></div>
 
 			{/* Desktop navigation */}
-			<div className="hidden sm:flex items-center gap-2 w-32 sm:w-44">
+			{/* <div className="hidden sm:flex items-center gap-2 w-32 sm:w-44">
 				<Button className="rounded-none text-sm">Login</Button>
 				<Button variant="outline" className="rounded-none text-sm">
 					Sign Up
 				</Button>
-			</div>
+			</div> */}
 
 			{/* Mobile menu button */}
 			<div className="flex sm:hidden">
