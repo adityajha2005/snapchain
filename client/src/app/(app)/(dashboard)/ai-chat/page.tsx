@@ -29,12 +29,12 @@ const AIChatPage = () => {
 
 	// Sample prompts that users might want to try
 	const samplePrompts = [
-		"How do I create an ERC-20 token?",
-		"Explain gas fees in Ethereum",
-		"What are smart contract security best practices?",
-		"How do I connect my dApp to a wallet?",
-		"Explain layer 2 scaling solutions",
-		"How does staking work?",
+		"How do I create an SPL token on Solana?",
+		"Explain transaction fees in Solana",
+		"What are Solana program security best practices?",
+		"How do I connect my dApp to Phantom wallet?",
+		"Explain Solana's proof of history",
+		"How does staking work on Solana?",
 	];
 
 	// Scroll to bottom of messages
