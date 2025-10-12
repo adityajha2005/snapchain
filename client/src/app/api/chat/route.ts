@@ -4,15 +4,17 @@ import OpenAI from 'openai';
 // Use environment variable instead of hardcoded API key
 const TOGETHER_API_KEY = process.env.TOGETHER_API_KEY;
 
-// Validate that API key is available
-if (!TOGETHER_API_KEY) {
-  console.error('Missing TOGETHER_API_KEY environment variable');
-}
-
-const client = new OpenAI({
-  apiKey: TOGETHER_API_KEY,
-  baseURL: 'https://api.together.xyz/v1',
-});
+// Create client only when API key is available
+const getClient = () => {
+  if (!TOGETHER_API_KEY) {
+    throw new Error('Missing TOGETHER_API_KEY environment variable');
+  }
+  
+  return new OpenAI({
+    apiKey: TOGETHER_API_KEY,
+    baseURL: 'https://api.together.xyz/v1',
+  });
+};
 
 const prompt = 'You are an experienced rust smart contract developer , you talk about blockchain and crypto specifically anything around Solana , do not hallucinate and ignore all other type of chats graciouslly  , and if you receive any json in message from user please return a smart contrcat in rust will the logical data it has'
 
@@ -28,6 +30,8 @@ export async function POST(req: NextRequest) {
     }
 
     try {
+      const client = getClient();
+      
       // Call the Together API directly without retrieving old messages
       const response = await client.chat.completions.create({
         model: 'meta-llama/Llama-3-8b-chat-hf',
