@@ -1,11 +1,12 @@
 
 import { Mail, User } from 'lucide-react';
-import Image from 'next/image';
-import { auth } from '@/auth';
 
 const ProfilePage = async () => {
-	const session = await auth();
-	const user = session?.user;
+	const user = {
+		name: 'Demo User',
+		email: 'demo@example.com',
+		image: null
+	};
 
 	return (
 		<div className='container mx-auto py-8 space-y-6 px-5 flex justify-center items-center'>
@@ -14,19 +15,9 @@ const ProfilePage = async () => {
 					{/* Avatar section */}
 					<div className='relative'>
 						<div className='h-24 w-24 md:h-32 md:w-32 rounded-full overflow-hidden border-4 border-background shadow-lg bg-card'>
-							{user?.image ? (
-								<Image
-									src={user.image}
-									alt={user?.name || 'User'}
-									width={128}
-									height={128}
-									className='object-cover w-full h-full'
-								/>
-							) : (
-								<div className='w-full h-full flex items-center justify-center bg-primary/10'>
-									<User className='h-12 w-12 text-primary/60' />
-								</div>
-							)}
+							<div className='w-full h-full flex items-center justify-center bg-primary/10'>
+								<User className='h-12 w-12 text-primary/60' />
+							</div>
 						</div>
 					</div>
 

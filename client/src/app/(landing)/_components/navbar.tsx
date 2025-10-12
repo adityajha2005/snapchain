@@ -18,7 +18,7 @@ const Navbar = () => {
 			{/* Desktop navigation */}
 			<div className="hidden sm:flex items-center gap-2 w-32 sm:w-44 justify-center">
 				<Button className="rounded-none text-sm  ring-2 ring-black/20 hover:ring-black/30">
-					<Link href="/auth">Launch App</Link>
+					<Link href="/smart-contracts">Launch App</Link>
 				</Button>
 			</div>
 
@@ -41,7 +41,9 @@ const Navbar = () => {
 			{/* Mobile menu */}
 			{mobileMenuOpen && (
 				<div className="sm:hidden absolute top-full left-0 right-0 bg-background border-b border-border p-4 flex flex-col gap-2 w-full">
-					<Button className="rounded-none w-full">Launch App</Button>
+					<Button className="rounded-none w-full">
+						<Link href="/smart-contracts">Launch App</Link>
+					</Button>
 				</div>
 			)}
 		</div>
