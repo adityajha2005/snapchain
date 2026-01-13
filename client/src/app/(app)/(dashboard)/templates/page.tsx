@@ -1,6 +1,6 @@
 'use client';
 
-import { Download, Filter, Search } from 'lucide-react';
+import { ExternalLink, Filter, Search } from 'lucide-react';
 import { useState } from 'react';
 
 // Define interface for template data
@@ -9,57 +9,125 @@ interface Template {
 	title: string;
 	description: string;
 	category: string;
-	image: string;
+	githubUrl: string;
+	auditStatus: string;
+	author: string;
 }
 
 const TemplatesPage = () => {
 	const [searchQuery, setSearchQuery] = useState('');
 	const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-	// Sample templates data
+	// Real pre-audited Solana smart contracts
 	const templates: Template[] = [
 		{
-			id: 'defi-exchange',
-			title: 'DeFi Exchange',
+			id: 'spl-token',
+			title: 'SPL Token Program',
 			description:
-				'A decentralized exchange template with liquidity pools and token swapping functionality',
+				'Official Solana Program Library token program - the standard for creating and managing tokens on Solana',
 			category: 'DeFi',
-			image: '/images/templates/defi-exchange.jpg',
+			githubUrl: 'https://github.com/solana-labs/solana-program-library/tree/master/token/program',
+			auditStatus: 'Audited by Solana Labs',
+			author: 'Solana Labs',
 		},
 		{
-			id: 'nft-marketplace',
-			title: 'NFT Marketplace',
-			description: 'A marketplace for buying, selling, and auctioning NFTs with royalty support',
+			id: 'metaplex-token-metadata',
+			title: 'Metaplex Token Metadata',
+			description: 'NFT standard for Solana - attach metadata to tokens, create NFT collections, and manage digital assets',
 			category: 'NFT',
-			image: '/images/templates/nft-marketplace.jpg',
+			githubUrl: 'https://github.com/metaplex-foundation/mpl-token-metadata',
+			auditStatus: 'Audited by Kudelski Security',
+			author: 'Metaplex Foundation',
 		},
 		{
-			id: 'dao-voting',
-			title: 'DAO Voting System',
-			description: 'A decentralized autonomous organization with proposal and voting mechanisms',
+			id: 'governance',
+			title: 'SPL Governance Program',
+			description: 'Decentralized governance with proposal creation, voting, and on-chain execution for DAOs',
 			category: 'Governance',
-			image: '/images/templates/dao-voting.jpg',
+			githubUrl: 'https://github.com/solana-labs/solana-program-library/tree/master/governance/program',
+			auditStatus: 'Audited by Solana Labs',
+			author: 'Solana Labs',
 		},
 		{
-			id: 'ico-platform',
-			title: 'ICO Platform',
-			description: 'An initial coin offering platform with vesting schedules and KYC integration',
-			category: 'Fundraising',
-			image: '/images/templates/ico-platform.jpg',
+			id: 'serum-dex',
+			title: 'Serum DEX',
+			description: 'Decentralized exchange protocol with on-chain orderbook and matching engine',
+			category: 'DeFi',
+			githubUrl: 'https://github.com/project-serum/serum-dex',
+			auditStatus: 'Multiple audits',
+			author: 'Project Serum',
 		},
 		{
-			id: 'wallet-integration',
-			title: 'Multi-Chain Wallet',
-			description: 'Connect to multiple blockchain wallets with a unified interface',
+			id: 'stake-pool',
+			title: 'SPL Stake Pool',
+			description: 'Liquid staking protocol allowing users to stake SOL and receive pool tokens',
+			category: 'DeFi',
+			githubUrl: 'https://github.com/solana-labs/solana-program-library/tree/master/stake-pool/program',
+			auditStatus: 'Audited by Solana Labs',
+			author: 'Solana Labs',
+		},
+		{
+			id: 'metaplex-auction',
+			title: 'Metaplex Auction House',
+			description: 'Decentralized NFT marketplace protocol with auction and fixed-price sale support',
+			category: 'NFT',
+			githubUrl: 'https://github.com/metaplex-foundation/mpl-auction-house',
+			auditStatus: 'Audited',
+			author: 'Metaplex Foundation',
+		},
+		{
+			id: 'spl-memo',
+			title: 'SPL Memo Program',
+			description: 'Simple program to attach memo strings to transactions for record-keeping',
 			category: 'Infrastructure',
-			image: '/images/templates/wallet.jpg',
+			githubUrl: 'https://github.com/solana-labs/solana-program-library/tree/master/memo/program',
+			auditStatus: 'Audited by Solana Labs',
+			author: 'Solana Labs',
 		},
 		{
-			id: 'game-assets',
-			title: 'Blockchain Game Assets',
-			description: 'Manage in-game assets as NFTs with trading and marketplace capabilities',
-			category: 'Gaming',
-			image: '/images/templates/game-assets.jpg',
+			id: 'pyth-oracle',
+			title: 'Pyth Oracle Program',
+			description: 'High-fidelity price oracle providing real-time market data for DeFi applications',
+			category: 'Infrastructure',
+			githubUrl: 'https://github.com/pyth-network/pyth-client',
+			auditStatus: 'Multiple audits',
+			author: 'Pyth Network',
+		},
+		{
+			id: 'switchboard-oracle',
+			title: 'Switchboard Oracle',
+			description: 'Decentralized oracle network for fetching and verifying off-chain data',
+			category: 'Infrastructure',
+			githubUrl: 'https://github.com/switchboard-xyz/sbv2-solana',
+			auditStatus: 'Audited',
+			author: 'Switchboard',
+		},
+		{
+			id: 'candy-machine',
+			title: 'Metaplex Candy Machine',
+			description: 'NFT minting and distribution program for fair launches and collections',
+			category: 'NFT',
+			githubUrl: 'https://github.com/metaplex-foundation/mpl-candy-machine',
+			auditStatus: 'Audited',
+			author: 'Metaplex Foundation',
+		},
+		{
+			id: 'lending-protocol',
+			title: 'Solend Protocol',
+			description: 'Algorithmic, decentralized lending and borrowing protocol on Solana',
+			category: 'DeFi',
+			githubUrl: 'https://github.com/solendprotocol/solana-program-library',
+			auditStatus: 'Audited by Kudelski',
+			author: 'Solend',
+		},
+		{
+			id: 'name-service',
+			title: 'Solana Name Service',
+			description: 'Domain name system for Solana - human-readable names for wallet addresses',
+			category: 'Infrastructure',
+			githubUrl: 'https://github.com/Bonfida/solana-name-service',
+			auditStatus: 'Audited',
+			author: 'Bonfida',
 		},
 	];
 
@@ -176,29 +244,49 @@ const TemplatesPage = () => {
 
 // Template card component to display each template
 const TemplateCard = ({ template }: { template: Template }) => {
+	const handleViewContract = () => {
+		// Open the GitHub URL in a new tab
+		window.open(template.githubUrl, '_blank', 'noopener,noreferrer');
+	};
+
 	return (
 		<div className='bg-card border border-border rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-primary/30'>
 			{/* Card content */}
 			<div className='p-6 space-y-4'>
 				<div>
-					<h3 className='font-medium text-lg'>{template.title}</h3>
+					<div className='flex items-start justify-between mb-2'>
+						<h3 className='font-medium text-lg'>{template.title}</h3>
+						<span className='text-xs px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'>
+							✓ Audited
+						</span>
+					</div>
 					<p className='text-sm text-muted-foreground mt-1 line-clamp-2'>
 						{template.description}
 					</p>
 				</div>
 
-				<div className='flex gap-2'>
+				<div className='flex flex-wrap gap-2'>
 					<span className='inline-block px-3 py-1 bg-secondary/70 text-secondary-foreground text-xs rounded-full'>
 						{template.category}
 					</span>
+					<span className='inline-block px-3 py-1 bg-blue-500/10 text-blue-600 text-xs rounded-full border border-blue-500/20'>
+						{template.author}
+					</span>
+				</div>
+
+				<div className='text-xs text-muted-foreground pt-2 border-t border-border'>
+					{template.auditStatus}
 				</div>
 			</div>
 
 			{/* Card actions */}
 			<div className='border-t border-border'>
-				<button className='w-full py-3 flex justify-center items-center gap-1 hover:bg-accent/20 transition-colors text-sm font-medium'>
-					<Download className='h-4 w-4 mr-1' />
-					Download
+				<button 
+					onClick={handleViewContract}
+					className='w-full py-3 flex justify-center items-center gap-2 hover:bg-accent/20 transition-colors text-sm font-medium text-primary'
+				>
+					<ExternalLink className='h-4 w-4' />
+					View Contract
 				</button>
 			</div>
 		</div>

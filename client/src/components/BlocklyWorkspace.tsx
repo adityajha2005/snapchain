@@ -4,6 +4,7 @@ import { BlocklyWorkspace as ReactBlockly } from 'react-blockly';
 import * as Blockly from 'blockly';
 import { rustGenerator } from '@/utils/rustGenerator';
 import { initialToolbox } from '@/utils/blocklyConfig';
+import { extractBlocksAsJson, createLLMPrompt } from '@/utils/blocklyToJson';
 import { Zap, Rocket, Key, X, AlertCircle, CheckCircle2, Loader2, Menu } from 'lucide-react';
 import Logo from './shared/Logo';
 import SmartContracts from './icons/smartContracts';
@@ -56,39 +57,42 @@ const BlocklyWorkspace: React.FC<BlocklyWorkspaceProps> = ({ onCodeChange, onRef
 
 		setIsGenerating(true);
 		try {
+			// Extract blocks as JSON structure with full hierarchy
+			const blocksJson = extractBlocksAsJson(workspaceRef.current);
+			
 			// Use the current code, whether it's from blocks or previously refined
 			const codeToRefine = currentCode || rustGenerator.workspaceToCode(workspaceRef.current);
 
-			// Send to API with refinement instruction
+			// Create comprehensive prompt with block structure
+			const blockStructurePrompt = createLLMPrompt(
+				blocksJson,
+				`CURRENT GENERATED CODE (for reference):
+\`\`\`rust
+${codeToRefine}
+\`\`\`
+
+TASK: Please analyze the block structure above and generate an improved, production-ready Solana smart contract. Focus on:
+1. Compilation correctness - ensure the code compiles without any errors
+2. Security vulnerabilities - identify and fix any potential security issues
+3. Gas optimization - optimize for minimal gas usage without compromising security
+4. Best practices - ensure code follows Rust and Solana best practices
+5. Error handling - verify all error cases are properly handled
+6. Proper implementation of all blocks in the structure
+7. Maintaining the logical flow represented by the blocks
+
+Return ONLY the improved Rust code in a code block using \`\`\`rust\`\`\` format.`
+			);
+
+			// Send to API with refinement instruction including block structure
 			const response = await fetch('/api/chat', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 				},
 				body: JSON.stringify({
-					message: `You are a senior Rust developer. This project is your life's work — you cannot afford a single mistake. Every line of code must be precise, clean, and exactly as the user specifies. No hallucinations, no assumptions, no improvisation. Your only mission is to understand the user's instructions perfectly and implement them with complete accuracy. Your reputation and everything you stand for depends on delivering exactly what the user asks, nothing more, nothing less.
-
-Task: Please analyze this Solana smart contract with extreme attention to detail. Focus on:
-1. Compilation correctness - ensure the code compiles without any errors
-2. Security vulnerabilities - identify and fix any potential security issues
-3. Gas optimization - optimize for minimal gas usage without compromising security
-4. Best practices - ensure code follows Rust and Solana best practices
-5. Error handling - verify all error cases are properly handled
-
-Here's the current code:
-
-\`\`\`rust
-${codeToRefine}
-\`\`\`
-
-Please provide:
-1. A thorough analysis of any issues found
-2. The refined code with necessary improvements
-3. Confirmation that the code will compile successfully
-4. A detailed explanation of all changes made
-
-Return the improved code in a code block using \`\`\`rust\`\`\` format.`,
+					message: blockStructurePrompt,
 					userId: 'contract-refiner',
+					blocksStructure: blocksJson, // Properly serialized JSON structure
 				}),
 			});
 
@@ -98,22 +102,17 @@ Return the improved code in a code block using \`\`\`rust\`\`\` format.`,
 
 			const data = await response.json();
 
-			// Extract code from response and update
-			const codeBlockRegex = /```(?:rust)?([\s\S]*?)```/g;
-			const matches = [...data.content.matchAll(codeBlockRegex)];
-
-			if (matches.length > 0) {
-				const refinedCode = matches[0][1].trim();
+			// The API now returns cleaned code without markdown fences or explanations
+			const refinedCode = data.content.trim();
+			
+			// Validate that we received actual code
+			if (refinedCode && refinedCode.length > 50) {
 				setCurrentCode(refinedCode);
 				setIsRefinedCode(true);
 				onCodeChange(refinedCode);
 				onRefineContract();
 			} else {
-				const fallbackCode = data.content;
-				setCurrentCode(fallbackCode);
-				setIsRefinedCode(true);
-				onCodeChange(fallbackCode);
-				onRefineContract();
+				throw new Error('Received invalid or empty code from API');
 			}
 		} catch (error) {
 			console.error('Error refining contract:', error);

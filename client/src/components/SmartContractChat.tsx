@@ -206,13 +206,8 @@ const 	SmartContractChat = ({ currentCode, onUpdateCode }: SmartContractChatProp
 									</div>
 									<span className='text-[10px] opacity-70'>{formatTime(message.timestamp)}</span>
 								</div>
-								<div className='whitespace-pre-wrap prose prose-sm max-w-none'>
-									<ReactMarkdown
-										rehypePlugins={[rehypeHighlight, rehypeRaw]}
-										remarkPlugins={[remarkGfm]}
-									>
-										{message.content}
-									</ReactMarkdown>
+								<div className='whitespace-pre-wrap text-sm leading-relaxed'>
+									{message.content}
 								</div>
 							</div>
 						</div>
