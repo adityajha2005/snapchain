@@ -5,6 +5,7 @@
 
 **Snapchain** is a full-stack Web3 platform combining a no-code smart contract builder with a Next.js frontend for Solana blockchain applications. Create and deploy production-ready dApps without writing Rust code.
 
+
 ## 🌟 Snapchain Features
 
 - **Visual Contract Builder**: Drag-and-drop interface for Solana programs
